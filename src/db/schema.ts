@@ -6,10 +6,12 @@ import {
   varchar,
   date,
 } from "drizzle-orm/pg-core";
+import timestamps from "./timestamps";
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull(),
+  ...timestamps,
 });
 
 export const books = pgTable("books", {
@@ -23,6 +25,7 @@ export const books = pgTable("books", {
   year: integer("year").notNull(),
   stock: integer("stock").default(0),
   categoryId: integer("category_id").references(() => categories.id),
+  ...timestamps,
 });
 
 export const members = pgTable("members", {

@@ -15,6 +15,13 @@
       "when": 1746603740923,
       "tag": "0001_amused_moonstone",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1746605416849,
+      "tag": "0002_mature_night_nurse",
+      "breakpoints": true
     }
   ]
 }
