@@ -19,6 +19,7 @@ export const books = pgTable("books", {
   synopsis: text("synopsis"),
   author: varchar("author", { length: 255 }),
   publisher: varchar("publisher", { length: 255 }),
+  pages: integer("pages").notNull(),
   year: integer("year").notNull(),
   stock: integer("stock").default(0),
   categoryId: integer("category_id").references(() => categories.id),
