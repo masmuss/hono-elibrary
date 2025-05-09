@@ -7,6 +7,7 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import timestamps from "./timestamps";
+import { relations } from "drizzle-orm";
 
 export const categories = pgTable("categories", {
   id: serial("id").primaryKey(),
@@ -27,6 +28,13 @@ export const books = pgTable("books", {
   categoryId: integer("category_id").references(() => categories.id),
   ...timestamps,
 });
+
+export const bookRelations = relations(books, ({ one }) => ({
+  category: one(categories, {
+    fields: [books.categoryId],
+    references: [categories.id],
+  }),
+}));
 
 export const members = pgTable("members", {
   id: serial("id").primaryKey(),

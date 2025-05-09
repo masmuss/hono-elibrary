@@ -1,5 +1,7 @@
 {
   "name": "e-library",
+  "version": "1.0.0",
+  "description": "A simple e-library API using Hono and Drizzle ORM",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "db:push": "drizzle-kit push",
@@ -8,8 +10,11 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@hono/zod-openapi": "^0.19.6",
+    "@scalar/hono-api-reference": "^0.8.8",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
+    "drizzle-zod": "^0.7.1",
     "hono": "^4.7.8",
     "pg": "^8.15.6",
     "zod": "^3.24.4"

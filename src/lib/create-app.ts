@@ -1,12 +1,12 @@
-import { Hono } from "hono";
 import { requestId } from "hono/request-id";
 import notFound from "@/middlewares/not-found";
 import onError from "@/middlewares/on-error";
 import { parseEnv } from "@/env";
 import { AppBindings } from "@/lib/types";
+import { OpenAPIHono } from "@hono/zod-openapi";
 
 export function createRouter() {
-  return new Hono<AppBindings>({
+  return new OpenAPIHono<AppBindings>({
     strict: false,
   });
 }
