@@ -1,21 +1,14 @@
-import { z } from "zod";
+import { EnvSchema, type Environment, type ParseEnvParams } from "./types";
 
-const EnvSchema = z.object({
-  NODE_ENV: z.string().default("development"),
-  DATABASE_URL: z.string().url().readonly(),
-});
+export function parseEnv(data: ParseEnvParams): Environment {
+	const { data: env, error } = EnvSchema.safeParse(data);
 
-export type Environment = z.infer<typeof EnvSchema>;
+	if (!error) return env;
 
-export function parseEnv(data: any): Environment {
-  const { data: env, error } = EnvSchema.safeParse(data);
-
-  if (!error) return env;
-
-  const errorMessage = `error: invalid env:\n${Object.entries(
-    error.flatten().fieldErrors,
-  )
-    .map(([key, errors]) => `${key}: ${errors.join(", ")}`)
-    .join("\n")}`;
-  throw new Error(errorMessage);
+	const errorMessage = `error: invalid env:\n${Object.entries(
+		error.flatten().fieldErrors,
+	)
+		.map(([key, errors]) => `${key}: ${errors.join(", ")}`)
+		.join("\n")}`;
+	throw new Error(errorMessage);
 }

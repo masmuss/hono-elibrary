@@ -1,4 +1,6 @@
-export interface Repository {
-    get(filter: Record<string, any>): Promise<any>;
-    byId(id: string | number): Promise<any>;
+import type { ResponseData } from "../base/types";
+
+export interface Repository<T = ResponseData> {
+	get(filter: unknown): Promise<T>;
+	byId(id: string | number): Promise<T | null>;
 }

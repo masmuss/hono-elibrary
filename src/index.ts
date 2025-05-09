@@ -1,14 +1,14 @@
 import createApp from "./lib/create-app";
 import openAPI from "./lib/openapi";
-import index from "./routes/index.route";
 import book from "./routes/book";
+import index from "./routes/index.route";
 
 const app = createApp();
 const routes = [index, book] as const;
 
-routes.forEach((route) => {
-  app.route("/api/", route);
-});
+for (const route of routes) {
+	app.route("/api/", route);
+}
 
 openAPI(app);
 

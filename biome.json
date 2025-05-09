@@ -1,0 +1,42 @@
+{
+	"$schema": "https://biomejs.dev/schemas/1.9.4/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true,
+		"defaultBranch": "main"
+	},
+	"files": {
+		"include": ["src/**/*", "tests/**/*", "drizzle.config.ts"],
+		"ignore": [
+			"node_modules/**/*",
+			"dist/**/*",
+			"package.json",
+			"bun.lock",
+			"src/db/migrations/**/*"
+		]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab",
+		"ignore": ["node_modules/**/*", "dist/**/*", "package.json", "bun.lock"]
+	},
+	"organizeImports": {
+		"enabled": true
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"recommended": true,
+			"suspicious": {
+				"noExplicitAny": "off"
+			}
+		},
+		"ignore": ["node_modules/**/*", "dist/**/*", "package.json", "bun.lock"]
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	}
+}
