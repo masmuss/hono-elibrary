@@ -1,17 +1,10 @@
 import { BaseRoutes } from "@/core/base/base-routes";
+import { IdParamSchema, PaginationQuerySchema } from "@/core/helpers/schemas";
 import {
 	getAllBooksSuccessResponse,
 	getBookByIdSuccessResponse,
 } from "@/core/schemas/book.schema";
 import { createRoute, z } from "@hono/zod-openapi";
-
-const stringToNumber = z.string().transform((val) => {
-	const parsed = Number(val);
-	if (Number.isNaN(parsed)) {
-		throw new Error("Invalid number format");
-	}
-	return parsed;
-});
 
 export class BookRoutes extends BaseRoutes {
 	allBooks = createRoute({
@@ -20,12 +13,7 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books",
 		method: "get",
 		request: {
-			query: z.object({
-				page: stringToNumber.optional(),
-				pageSize: stringToNumber.optional(),
-				orderBy: z.string().optional(),
-				search: z.string().optional(),
-			}),
+			query: PaginationQuerySchema,
 		},
 		responses: {
 			[200]: this.successResponse(
@@ -41,9 +29,7 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books/{id}",
 		method: "get",
 		request: {
-			params: z.object({
-				id: stringToNumber,
-			}),
+			params: IdParamSchema,
 		},
 		responses: {
 			[200]: this.successResponse(

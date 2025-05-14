@@ -9,9 +9,9 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "lint": "bunx biome lint",
-    "lint:check": "bunx biome check --staged --files-ignore-unknown=true --no-errors-on-unmatched",
+    "lint:check": "bunx biome check --staged",
     "lint:fix": "bunx biome lint --write",
-    "format": "bunx biome format",
+    "format": "bunx biome format --write .",
     "prepare": "husky"
   },
   "dependencies": {
