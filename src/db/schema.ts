@@ -17,7 +17,7 @@ export const categories = pgTable("categories", {
 
 export const books = pgTable("books", {
 	id: serial("id").primaryKey(),
-	isbn: varchar("isbn", { length: 255 }).notNull(),
+	isbn: varchar("isbn", { length: 255 }).unique().notNull(),
 	title: varchar("title", { length: 255 }).notNull(),
 	synopsis: text("synopsis"),
 	author: varchar("author", { length: 255 }),
