@@ -1,7 +1,7 @@
-import createApp from "./lib/create-app";
+import createApp from "./lib/app";
 import openAPI from "./lib/openapi";
+import index from "./routes";
 import book from "./routes/book";
-import index from "./routes/index.route";
 
 const app = createApp();
 const routes = [index, book] as const;

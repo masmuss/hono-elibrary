@@ -1,5 +1,5 @@
 import { BookHandler } from "@/core/handlers/book.handler";
-import { createRouter } from "@/lib/create-app";
+import { createRouter } from "@/lib/app";
 import { BookRoutes } from "./book.routes";
 
 const routes = new BookRoutes();

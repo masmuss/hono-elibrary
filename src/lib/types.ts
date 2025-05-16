@@ -1,5 +1,5 @@
+import type { Environment } from "@/config/types";
 import type { books } from "@/db/schema";
-import type { Environment } from "@/types";
 import {
 	type OpenAPIHono,
 	type RouteConfig,

@@ -21,6 +21,13 @@ export default function openAPI(app: App) {
 				targetKey: "node",
 				clientKey: "axios",
 			},
+			hideSearch: true,
+			servers: [
+				{
+					url: "http://localhost:3000",
+					description: "Local server",
+				},
+			],
 			url: "/doc",
 		}),
 	);

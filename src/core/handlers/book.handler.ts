@@ -28,11 +28,13 @@ export class BookHandler extends BaseHandler {
 		try {
 			const { id } = c.req.valid("param");
 
+			if (!id)
+				return c.json(this.responseBuilder(null, "Book ID is required"), 400);
+
 			const book = await this.repository.byId(id);
 
-			if (!book) {
+			if (!book)
 				return c.json(this.responseBuilder(null, "Book not found"), 404);
-			}
 
 			return c.json(this.responseBuilder(book, "Book retrieved successfully"));
 		} catch (error: unknown) {

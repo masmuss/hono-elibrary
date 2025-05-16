@@ -36,6 +36,12 @@ export class BookRoutes extends BaseRoutes {
 				getBookByIdSuccessResponse,
 				"Book retrieved successfully",
 			),
+			[400]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book ID is required",
+			),
 			[404]: this.errorResponse(
 				z.object({
 					message: z.string(),

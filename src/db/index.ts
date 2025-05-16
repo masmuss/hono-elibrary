@@ -1,5 +1,5 @@
+import envRuntime from "@/config/env-runtime";
 import * as schema from "@/db/schema";
-import envRuntime from "@/env-runtime";
 import { drizzle } from "drizzle-orm/node-postgres";
 
 const db = drizzle({
