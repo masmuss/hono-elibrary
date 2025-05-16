@@ -7,6 +7,7 @@ const handlers = new BookHandler();
 
 const router = createRouter()
 	.openapi(routes.allBooks, handlers.getAllBooks)
-	.openapi(routes.byId, handlers.getBookById);
+	.openapi(routes.byId, handlers.getBookById)
+	.openapi(routes.create, handlers.createBook);
 
 export default router;

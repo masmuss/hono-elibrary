@@ -1,5 +1,9 @@
 import type { AppRouteHandler } from "@/lib/types";
-import type { AllBooksRoute, BookByIdRoute } from "@/routes/book/book.routes";
+import type {
+	AllBooksRoute,
+	BookByIdRoute,
+	CreateBookRoute,
+} from "@/routes/book/book.routes";
 import { BaseHandler } from "../base/base-handler";
 import { ResponseData } from "../base/types";
 import { BookRepository } from "../repositories/book.repository";
@@ -40,6 +44,32 @@ export class BookHandler extends BaseHandler {
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to retrieve book", error as Error),
+			);
+		}
+	};
+
+	createBook: AppRouteHandler<CreateBookRoute> = async (c) => {
+		try {
+			const body = c.req.valid("json");
+
+			if (!body) {
+				throw new Error("Invalid request body");
+			}
+
+			const book = await this.repository.create(body);
+
+			if (!book) {
+				throw new Error("Failed to create book");
+			}
+
+			return c.json(
+				this.responseBuilder(book, "Book created successfully"),
+				201,
+			);
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(null, "Failed to create book", error as Error),
+				400,
 			);
 		}
 	};

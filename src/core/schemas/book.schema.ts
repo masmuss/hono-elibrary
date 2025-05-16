@@ -18,12 +18,8 @@ export const getAllBooksSuccessResponse = z.object({
 	total: z.number(),
 	totalPages: z.number(),
 	page: z.number(),
-	message: z.string(),
-	error: z.nullable(z.string()),
 });
 
-export const getBookByIdSuccessResponse = z.object({
+export const getBookSuccessResponse = z.object({
 	data: selectBooks,
-	message: z.string(),
-	error: z.nullable(z.string()),
 });

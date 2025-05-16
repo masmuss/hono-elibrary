@@ -1,9 +1,9 @@
 import { BaseRepository } from "@/core/base/base-repository";
 import type { Repository } from "@/core/interfaces/repository.interface";
 import { books } from "@/db/schema";
-import type { Book } from "@/lib/types";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { PaginatedData } from "../base/types";
+import type { Book, BookInsert } from "../types/book";
 import type { Filter } from "./types";
 
 export class BookRepository extends BaseRepository implements Repository {
@@ -65,5 +65,11 @@ export class BookRepository extends BaseRepository implements Repository {
 
 		if (!query) return null;
 		return { data: query };
+	}
+
+	async create(book: BookInsert): Promise<{ data: Book } | null> {
+		const query = await this.db.insert(books).values(book).returning();
+		if (!query) return null;
+		return { data: query[0] };
 	}
 }
