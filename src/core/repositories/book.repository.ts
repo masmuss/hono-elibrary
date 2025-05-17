@@ -1,12 +1,12 @@
-import { BaseRepository } from "@/core/base/base-repository";
 import type { Repository } from "@/core/interfaces/repository.interface";
 import { books } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { PaginatedData } from "../base/types";
+import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Book, BookInsert } from "../types/book";
 import type { Filter } from "./types";
 
-export class BookRepository extends BaseRepository implements Repository {
+export class BookRepository extends SoftDeleteMixin implements Repository {
 	constructor() {
 		super(books, {
 			latest: desc(books.createdAt),

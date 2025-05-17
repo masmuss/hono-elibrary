@@ -1,10 +1,5 @@
 import type { Environment } from "@/config/types";
-import {
-	type OpenAPIHono,
-	type RouteConfig,
-	type RouteHandler,
-	z,
-} from "@hono/zod-openapi";
+import type { OpenAPIHono, RouteConfig, RouteHandler } from "@hono/zod-openapi";
 
 export interface AppBindings {
 	Bindings: Environment;

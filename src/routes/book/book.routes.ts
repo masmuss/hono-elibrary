@@ -3,7 +3,6 @@ import jsonContentRequired from "@/core/helpers/json-content-required";
 import { IdParamSchema, PaginationQuerySchema } from "@/core/helpers/schemas";
 import {
 	getAllBooksSuccessResponse,
-	getBookByIdSuccessResponse,
 	getBookSuccessResponse,
 } from "@/core/schemas/book.schema";
 import { createBookSchema } from "@/core/validations/book.validation";

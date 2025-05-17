@@ -5,7 +5,6 @@ import type {
 	CreateBookRoute,
 } from "@/routes/book/book.routes";
 import { BaseHandler } from "../base/base-handler";
-import { ResponseData } from "../base/types";
 import { BookRepository } from "../repositories/book.repository";
 
 export class BookHandler extends BaseHandler {
