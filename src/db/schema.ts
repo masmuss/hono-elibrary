@@ -3,20 +3,20 @@ import {
 	date,
 	integer,
 	pgTable,
-	serial,
 	text,
+	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
 import timestamps from "./timestamps";
 
 export const categories = pgTable("categories", {
-	id: serial("id").primaryKey(),
+	id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 	name: varchar("name", { length: 100 }).notNull(),
 	...timestamps,
 });
 
 export const books = pgTable("books", {
-	id: serial("id").primaryKey(),
+	id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 	isbn: varchar("isbn", { length: 255 }).unique().notNull(),
 	title: varchar("title", { length: 255 }).notNull(),
 	synopsis: text("synopsis"),
@@ -25,7 +25,9 @@ export const books = pgTable("books", {
 	pages: integer("pages").notNull(),
 	year: integer("year").notNull(),
 	stock: integer("stock").default(0),
-	categoryId: integer("category_id").references(() => categories.id),
+	categoryId: integer("category_id")
+		.references(() => categories.id)
+		.notNull(),
 	...timestamps,
 });
 
@@ -37,7 +39,7 @@ export const bookRelations = relations(books, ({ one }) => ({
 }));
 
 export const members = pgTable("members", {
-	id: serial("id").primaryKey(),
+	id: uuid().primaryKey().defaultRandom(),
 	name: varchar("name", { length: 255 }).notNull(),
 	email: varchar("email", { length: 255 }),
 	phone: varchar("phone", { length: 20 }),
@@ -46,8 +48,8 @@ export const members = pgTable("members", {
 });
 
 export const loans = pgTable("loans", {
-	id: serial("id").primaryKey(),
-	memberId: integer("member_id")
+	id: uuid().primaryKey().defaultRandom(),
+	memberId: uuid("member_id")
 		.references(() => members.id)
 		.notNull(),
 	bookId: integer("book_id")
@@ -57,3 +59,14 @@ export const loans = pgTable("loans", {
 	returnDate: date("return_date"),
 	returnedAt: date("returned_at"), // jika null berarti belum dikembalikan
 });
+
+export const loanRelations = relations(loans, ({ one }) => ({
+	member: one(members, {
+		fields: [loans.memberId],
+		references: [members.id],
+	}),
+	book: one(books, {
+		fields: [loans.bookId],
+		references: [books.id],
+	}),
+}));

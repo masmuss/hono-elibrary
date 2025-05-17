@@ -1,0 +1,1 @@
+ALTER TABLE "loans" ALTER COLUMN "member_id" SET DATA TYPE uuid;

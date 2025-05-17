@@ -29,6 +29,27 @@
       "when": 1747378229442,
       "tag": "0003_typical_shotgun",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1747473831565,
+      "tag": "0004_hard_red_shift",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1747474250237,
+      "tag": "0005_melted_wallflower",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1747474589103,
+      "tag": "0006_lyrical_ironclad",
+      "breakpoints": true
     }
   ]
 }
