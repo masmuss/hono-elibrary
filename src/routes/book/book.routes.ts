@@ -5,7 +5,10 @@ import {
 	getAllBooksSuccessResponse,
 	getBookSuccessResponse,
 } from "@/core/schemas/book.schema";
-import { createBookSchema } from "@/core/validations/book.validation";
+import {
+	createBookSchema,
+	updateBookSchema,
+} from "@/core/validations/book.validation";
 import { createRoute, z } from "@hono/zod-openapi";
 
 export class BookRoutes extends BaseRoutes {
@@ -74,8 +77,131 @@ export class BookRoutes extends BaseRoutes {
 			),
 		},
 	});
+
+	update = createRoute({
+		tags: ["Book"],
+		description: "Update a book",
+		path: "/books/{id}",
+		method: "put",
+		request: {
+			params: IdParamSchema,
+			body: jsonContentRequired(updateBookSchema, "Update book schema"),
+		},
+		responses: {
+			[200]: this.successResponse(
+				getBookSuccessResponse,
+				"Book updated successfully",
+			),
+			[400]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Invalid request",
+			),
+			[404]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book not found",
+			),
+		},
+	});
+
+	softDelete = createRoute({
+		tags: ["Book"],
+		description: "Soft delete a book",
+		path: "/books/{id}",
+		method: "delete",
+		request: {
+			params: IdParamSchema,
+		},
+		responses: {
+			[200]: this.successResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book deleted successfully",
+			),
+			[400]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book ID is required",
+			),
+			[404]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book not found",
+			),
+		},
+	});
+
+	restore = createRoute({
+		tags: ["Book"],
+		description: "Restore a soft deleted book",
+		path: "/books/{id}/restore",
+		method: "post",
+		request: {
+			params: IdParamSchema,
+		},
+		responses: {
+			[200]: this.successResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book restored successfully",
+			),
+			[400]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book ID is required",
+			),
+			[404]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book not found",
+			),
+		},
+	});
+
+	hardDelete = createRoute({
+		tags: ["Book"],
+		description: "Hard delete a book",
+		path: "/books/{id}/hard-delete",
+		method: "delete",
+		request: {
+			params: IdParamSchema,
+		},
+		responses: {
+			[200]: this.successResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book hard deleted successfully",
+			),
+			[400]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book ID is required",
+			),
+			[404]: this.errorResponse(
+				z.object({
+					message: z.string(),
+				}),
+				"Book not found",
+			),
+		},
+	});
 }
 
 export type AllBooksRoute = typeof BookRoutes.prototype.allBooks;
 export type BookByIdRoute = typeof BookRoutes.prototype.byId;
 export type CreateBookRoute = typeof BookRoutes.prototype.create;
+export type UpdateBookRoute = typeof BookRoutes.prototype.update;
+export type SoftDeleteBookRoute = typeof BookRoutes.prototype.softDelete;
+export type RestoreBookRoute = typeof BookRoutes.prototype.restore;
+export type HardDeleteBookRoute = typeof BookRoutes.prototype.hardDelete;

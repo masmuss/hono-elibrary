@@ -2,11 +2,11 @@ import { books } from "@/db/schema";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const selectBooks = createSelectSchema(books);
+export const selectBook = createSelectSchema(books);
 
 export const getAllBooksSuccessResponse = z.object({
 	data: z.array(
-		selectBooks.pick({
+		selectBook.pick({
 			id: true,
 			isbn: true,
 			title: true,
@@ -21,5 +21,5 @@ export const getAllBooksSuccessResponse = z.object({
 });
 
 export const getBookSuccessResponse = z.object({
-	data: selectBooks,
+	data: selectBook,
 });

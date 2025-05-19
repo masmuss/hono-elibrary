@@ -1,11 +1,11 @@
 import { BaseRepository } from "@/core/base/base-repository";
 import { eq, sql } from "drizzle-orm";
 import type { InferSelectModel } from "drizzle-orm";
-import type { PaginatedData } from "../base/types";
+import type { PaginatedData, ResponseData } from "../base/types";
 import type { Filter } from "../repositories/types";
 
 export class SoftDeleteMixin extends BaseRepository {
-	async softDelete(id: string | number): Promise<boolean> {
+	async softDelete(id: string | number): Promise<ResponseData> {
 		const deletedAt = new Date();
 		const result = await this.db
 			.update(this.table)
@@ -13,26 +13,32 @@ export class SoftDeleteMixin extends BaseRepository {
 			.where(eq((this.table as any).id, id))
 			.returning();
 
-		return result.length > 0;
+		if (result.length <= 0) return null;
+
+		return { data: result[0] };
 	}
 
-	async restore(id: string | number): Promise<boolean> {
+	async restore(id: string | number): Promise<ResponseData> {
 		const result = await this.db
 			.update(this.table)
 			.set({ deletedAt: null })
 			.where(eq((this.table as any).id, id))
 			.returning();
 
-		return result.length > 0;
+		if (result.length <= 0) return null;
+
+		return { data: result[0] };
 	}
 
-	async hardDelete(id: string | number): Promise<boolean> {
+	async hardDelete(id: string | number): Promise<ResponseData> {
 		const result = await this.db
 			.delete(this.table)
 			.where(eq((this.table as any).id, id))
 			.returning();
 
-		return result.length > 0;
+		if (result.length <= 0) return null;
+
+		return { data: result[0] };
 	}
 
 	async get(

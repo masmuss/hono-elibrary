@@ -3,6 +3,9 @@ import type {
 	AllBooksRoute,
 	BookByIdRoute,
 	CreateBookRoute,
+	RestoreBookRoute,
+	SoftDeleteBookRoute,
+	UpdateBookRoute,
 } from "@/routes/book/book.routes";
 import { BaseHandler } from "../base/base-handler";
 import { BookRepository } from "../repositories/book.repository";
@@ -68,6 +71,115 @@ export class BookHandler extends BaseHandler {
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to create book", error as Error),
+				400,
+			);
+		}
+	};
+
+	updateBook: AppRouteHandler<UpdateBookRoute> = async (c) => {
+		try {
+			const { id } = c.req.valid("param");
+			const body = c.req.valid("json");
+
+			if (!id) {
+				return c.json(this.responseBuilder(null, "Book ID is required"), 400);
+			}
+
+			if (!body) {
+				return c.json(this.responseBuilder(null, "Invalid request body"), 400);
+			}
+
+			const book = await this.repository.update(id, body);
+
+			if (!book) {
+				return c.json(this.responseBuilder(null, "Book not found"), 404);
+			}
+
+			return c.json(
+				this.responseBuilder(book, "Book updated successfully"),
+				200,
+			);
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(null, "Failed to update book", error as Error),
+				400,
+			);
+		}
+	};
+
+	softDeleteBook: AppRouteHandler<SoftDeleteBookRoute> = async (c) => {
+		try {
+			const { id } = c.req.valid("param");
+
+			if (!id) {
+				return c.json(this.responseBuilder(null, "Book ID is required"), 400);
+			}
+
+			const book = await this.repository.softDelete(id);
+
+			if (!book) {
+				return c.json(this.responseBuilder(null, "Book not found"), 404);
+			}
+
+			return c.json(
+				this.responseBuilder(book, "Book deleted successfully"),
+				200,
+			);
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(null, "Failed to delete book", error as Error),
+				400,
+			);
+		}
+	};
+
+	restoreBook: AppRouteHandler<RestoreBookRoute> = async (c) => {
+		try {
+			const { id } = c.req.valid("param");
+
+			if (!id) {
+				return c.json(this.responseBuilder(null, "Book ID is required"), 400);
+			}
+
+			const book = await this.repository.restore(id);
+
+			if (!book) {
+				return c.json(this.responseBuilder(null, "Book not found"), 404);
+			}
+
+			return c.json(
+				this.responseBuilder(book, "Book restored successfully"),
+				200,
+			);
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(null, "Failed to restore book", error as Error),
+				400,
+			);
+		}
+	};
+
+	hardDeleteBook: AppRouteHandler<RestoreBookRoute> = async (c) => {
+		try {
+			const { id } = c.req.valid("param");
+
+			if (!id) {
+				return c.json(this.responseBuilder(null, "Book ID is required"), 400);
+			}
+
+			const book = await this.repository.hardDelete(id);
+
+			if (!book) {
+				return c.json(this.responseBuilder(null, "Book not found"), 404);
+			}
+
+			return c.json(
+				this.responseBuilder(book, "Book deleted successfully"),
+				200,
+			);
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(null, "Failed to delete book", error as Error),
 				400,
 			);
 		}

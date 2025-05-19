@@ -3,7 +3,7 @@ import { books } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { PaginatedData } from "../base/types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
-import type { Book, BookInsert } from "../types/book";
+import type { Book, BookInsert, BookUpdate } from "../types/book";
 import type { Filter } from "./types";
 
 export class BookRepository extends SoftDeleteMixin implements Repository {
@@ -69,6 +69,17 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 
 	async create(book: BookInsert): Promise<{ data: Book } | null> {
 		const query = await this.db.insert(books).values(book).returning();
+		if (!query) return null;
+		return { data: query[0] };
+	}
+
+	async update(id: number, book: BookUpdate): Promise<{ data: Book } | null> {
+		const query = await this.db
+			.update(books)
+			.set(book)
+			.where(and(eq(books.id, id), isNull(books.deletedAt)))
+			.returning();
+
 		if (!query) return null;
 		return { data: query[0] };
 	}
