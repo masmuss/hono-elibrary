@@ -5,11 +5,12 @@ import {
 	getAllBooksSuccessResponse,
 	getBookSuccessResponse,
 } from "@/core/schemas/book.schema";
+import { errorResponse } from "@/core/schemas/errors.schema";
 import {
 	createBookSchema,
 	updateBookSchema,
 } from "@/core/validations/book.validation";
-import { createRoute, z } from "@hono/zod-openapi";
+import { createRoute } from "@hono/zod-openapi";
 
 export class BookRoutes extends BaseRoutes {
 	allBooks = createRoute({
@@ -41,18 +42,8 @@ export class BookRoutes extends BaseRoutes {
 				getBookSuccessResponse,
 				"Book retrieved successfully",
 			),
-			[400]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book ID is required",
-			),
-			[404]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book not found",
-			),
+			[400]: this.errorResponse(errorResponse, "Book ID is required"),
+			[404]: this.errorResponse(errorResponse, "Book not found"),
 		},
 	});
 
@@ -69,12 +60,7 @@ export class BookRoutes extends BaseRoutes {
 				getBookSuccessResponse,
 				"Book created successfully",
 			),
-			[400]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Invalid request",
-			),
+			[400]: this.errorResponse(errorResponse, "Invalid request"),
 		},
 	});
 
@@ -92,18 +78,8 @@ export class BookRoutes extends BaseRoutes {
 				getBookSuccessResponse,
 				"Book updated successfully",
 			),
-			[400]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Invalid request",
-			),
-			[404]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book not found",
-			),
+			[400]: this.errorResponse(errorResponse, "Invalid request"),
+			[404]: this.errorResponse(errorResponse, "Book not found"),
 		},
 	});
 
@@ -116,24 +92,9 @@ export class BookRoutes extends BaseRoutes {
 			params: IdParamSchema,
 		},
 		responses: {
-			[200]: this.successResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book deleted successfully",
-			),
-			[400]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book ID is required",
-			),
-			[404]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book not found",
-			),
+			[200]: this.successResponse(errorResponse, "Book deleted successfully"),
+			[400]: this.errorResponse(errorResponse, "Book ID is required"),
+			[404]: this.errorResponse(errorResponse, "Book not found"),
 		},
 	});
 
@@ -146,24 +107,9 @@ export class BookRoutes extends BaseRoutes {
 			params: IdParamSchema,
 		},
 		responses: {
-			[200]: this.successResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book restored successfully",
-			),
-			[400]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book ID is required",
-			),
-			[404]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book not found",
-			),
+			[200]: this.successResponse(errorResponse, "Book restored successfully"),
+			[400]: this.errorResponse(errorResponse, "Book ID is required"),
+			[404]: this.errorResponse(errorResponse, "Book not found"),
 		},
 	});
 
@@ -177,23 +123,11 @@ export class BookRoutes extends BaseRoutes {
 		},
 		responses: {
 			[200]: this.successResponse(
-				z.object({
-					message: z.string(),
-				}),
+				errorResponse,
 				"Book hard deleted successfully",
 			),
-			[400]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book ID is required",
-			),
-			[404]: this.errorResponse(
-				z.object({
-					message: z.string(),
-				}),
-				"Book not found",
-			),
+			[400]: this.errorResponse(errorResponse, "Book ID is required"),
+			[404]: this.errorResponse(errorResponse, "Book not found"),
 		},
 	});
 }
