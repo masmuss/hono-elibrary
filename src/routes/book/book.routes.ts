@@ -6,10 +6,12 @@ import {
 	getBookSuccessResponse,
 } from "@/core/schemas/book.schema";
 import { errorResponse } from "@/core/schemas/errors.schema";
+import { authHeadersSchema } from "@/core/validations/auth.validation";
 import {
 	createBookSchema,
 	updateBookSchema,
 } from "@/core/validations/book.validation";
+import { authMiddleware } from "@/middlewares/auth";
 import { createRoute } from "@hono/zod-openapi";
 
 export class BookRoutes extends BaseRoutes {
@@ -53,8 +55,10 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books",
 		method: "post",
 		request: {
+			headers: authHeadersSchema,
 			body: jsonContentRequired(createBookSchema, "Create book schema"),
 		},
+		middleware: [authMiddleware],
 		responses: {
 			[201]: this.successResponse(
 				getBookSuccessResponse,
@@ -70,9 +74,11 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books/{id}",
 		method: "put",
 		request: {
+			headers: authHeadersSchema,
 			params: IdParamSchema,
 			body: jsonContentRequired(updateBookSchema, "Update book schema"),
 		},
+		middleware: [authMiddleware],
 		responses: {
 			[200]: this.successResponse(
 				getBookSuccessResponse,
@@ -89,8 +95,10 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books/{id}",
 		method: "delete",
 		request: {
+			headers: authHeadersSchema,
 			params: IdParamSchema,
 		},
+		middleware: [authMiddleware],
 		responses: {
 			[200]: this.successResponse(errorResponse, "Book deleted successfully"),
 			[400]: this.errorResponse(errorResponse, "Book ID is required"),
@@ -104,8 +112,10 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books/{id}/restore",
 		method: "post",
 		request: {
+			headers: authHeadersSchema,
 			params: IdParamSchema,
 		},
+		middleware: [authMiddleware],
 		responses: {
 			[200]: this.successResponse(errorResponse, "Book restored successfully"),
 			[400]: this.errorResponse(errorResponse, "Book ID is required"),
@@ -119,8 +129,10 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books/{id}/hard-delete",
 		method: "delete",
 		request: {
+			headers: authHeadersSchema,
 			params: IdParamSchema,
 		},
+		middleware: [authMiddleware],
 		responses: {
 			[200]: this.successResponse(
 				errorResponse,

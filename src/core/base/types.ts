@@ -2,7 +2,7 @@ import type { InferSelectModel } from "drizzle-orm";
 import type { PgTable } from "drizzle-orm/pg-core";
 
 export type PaginatedData = {
-	data: InferSelectModel<PgTable>[] | InferSelectModel<PgTable>;
+	data: InferSelectModel<PgTable>[] | InferSelectModel<PgTable> | any;
 	total: number;
 	totalPages: number;
 	page: number;

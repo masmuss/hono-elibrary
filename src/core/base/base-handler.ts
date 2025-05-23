@@ -1,10 +1,9 @@
-import type { Repository } from "../interfaces/repository.interface";
 import type { ResponseData } from "./types";
 
 export class BaseHandler {
-	protected repository: Repository;
+	protected repository;
 
-	constructor(repository: Repository) {
+	constructor(repository: any) {
 		this.repository = repository;
 	}
 
