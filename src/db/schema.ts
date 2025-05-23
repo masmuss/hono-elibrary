@@ -9,24 +9,32 @@ import {
 } from "drizzle-orm/pg-core";
 import timestamps from "./timestamps";
 
-export const users = pgTable("users", {
-	id: uuid().primaryKey().defaultRandom(),
-	name: varchar("name", { length: 255 }).notNull(),
-	username: varchar("username", { length: 50 }).notNull().unique(),
-	email: varchar("email", { length: 255 }).notNull().unique(),
-	password: varchar("password", { length: 255 }).notNull(),
-	roleId: integer("role_id")
-		.references(() => roles.id)
-		.notNull(),
-	...timestamps,
-});
-
 export const roles = pgTable("roles", {
 	id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 	name: varchar("name", { length: 50 }).notNull(),
 	description: text("description"),
 	...timestamps,
 });
+
+export const users = pgTable("users", {
+	id: uuid().primaryKey().defaultRandom(),
+	name: varchar("name", { length: 255 }).notNull(),
+	username: varchar("username", { length: 50 }).notNull().unique(),
+	email: varchar("email", { length: 255 }).notNull().unique(),
+	password: varchar("password", { length: 255 }).notNull(),
+	salt: varchar("salt", { length: 255 }).notNull(),
+	roleId: integer("role_id")
+		.references(() => roles.id)
+		.notNull(),
+	...timestamps,
+});
+
+export const userRelations = relations(users, ({ one }) => ({
+	role: one(roles, {
+		fields: [users.roleId],
+		references: [roles.id],
+	}),
+}));
 
 export const categories = pgTable("categories", {
 	id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
