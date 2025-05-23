@@ -11,7 +11,9 @@ import {
 	createBookSchema,
 	updateBookSchema,
 } from "@/core/validations/book.validation";
+import { UserRole } from "@/lib/constants/roles";
 import { authMiddleware } from "@/middlewares/auth";
+import { authorizeRole } from "@/middlewares/authorization";
 import { createRoute } from "@hono/zod-openapi";
 
 export class BookRoutes extends BaseRoutes {
@@ -58,7 +60,7 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			body: jsonContentRequired(createBookSchema, "Create book schema"),
 		},
-		middleware: [authMiddleware],
+		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
 			[201]: this.successResponse(
 				getBookSuccessResponse,
@@ -78,7 +80,7 @@ export class BookRoutes extends BaseRoutes {
 			params: IdParamSchema,
 			body: jsonContentRequired(updateBookSchema, "Update book schema"),
 		},
-		middleware: [authMiddleware],
+		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
 			[200]: this.successResponse(
 				getBookSuccessResponse,
@@ -98,7 +100,7 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: IdParamSchema,
 		},
-		middleware: [authMiddleware],
+		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
 			[200]: this.successResponse(errorResponse, "Book deleted successfully"),
 			[400]: this.errorResponse(errorResponse, "Book ID is required"),
@@ -115,7 +117,7 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: IdParamSchema,
 		},
-		middleware: [authMiddleware],
+		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
 			[200]: this.successResponse(errorResponse, "Book restored successfully"),
 			[400]: this.errorResponse(errorResponse, "Book ID is required"),
@@ -132,7 +134,7 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: IdParamSchema,
 		},
-		middleware: [authMiddleware],
+		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
 			[200]: this.successResponse(
 				errorResponse,
