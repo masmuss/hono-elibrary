@@ -9,6 +9,25 @@ import {
 } from "drizzle-orm/pg-core";
 import timestamps from "./timestamps";
 
+export const users = pgTable("users", {
+	id: uuid().primaryKey().defaultRandom(),
+	name: varchar("name", { length: 255 }).notNull(),
+	username: varchar("username", { length: 50 }).notNull().unique(),
+	email: varchar("email", { length: 255 }).notNull().unique(),
+	password: varchar("password", { length: 255 }).notNull(),
+	roleId: integer("role_id")
+		.references(() => roles.id)
+		.notNull(),
+	...timestamps,
+});
+
+export const roles = pgTable("roles", {
+	id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
+	name: varchar("name", { length: 50 }).notNull(),
+	description: text("description"),
+	...timestamps,
+});
+
 export const categories = pgTable("categories", {
 	id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
 	name: varchar("name", { length: 100 }).notNull(),
@@ -40,12 +59,20 @@ export const bookRelations = relations(books, ({ one }) => ({
 
 export const members = pgTable("members", {
 	id: uuid().primaryKey().defaultRandom(),
-	name: varchar("name", { length: 255 }).notNull(),
-	email: varchar("email", { length: 255 }),
+	userId: uuid("user_id")
+		.references(() => users.id)
+		.notNull(),
 	phone: varchar("phone", { length: 20 }),
 	address: text("address"),
-	registeredAt: date("registered_at").defaultNow(),
+	...timestamps,
 });
+
+export const memberRelations = relations(members, ({ one }) => ({
+	user: one(users, {
+		fields: [members.userId],
+		references: [users.id],
+	}),
+}));
 
 export const loans = pgTable("loans", {
 	id: uuid().primaryKey().defaultRandom(),
