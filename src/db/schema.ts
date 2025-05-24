@@ -51,7 +51,7 @@ export const books = pgTable("books", {
 	publisher: varchar("publisher", { length: 255 }),
 	pages: integer("pages").notNull(),
 	year: integer("year").notNull(),
-	stock: integer("stock").default(0),
+	stock: integer("stock").notNull().default(1),
 	categoryId: integer("category_id")
 		.references(() => categories.id)
 		.notNull(),
@@ -93,6 +93,7 @@ export const loans = pgTable("loans", {
 	loanDate: date("loan_date").defaultNow(),
 	returnDate: date("return_date"),
 	returnedAt: date("returned_at"), // jika null berarti belum dikembalikan
+	...timestamps,
 });
 
 export const loanRelations = relations(loans, ({ one }) => ({

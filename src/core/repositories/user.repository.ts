@@ -58,7 +58,6 @@ export class UserRepository extends BaseRepository {
 
 		if (!user) return null;
 
-		console.log(user);
 		const isValid = await Bun.password.verify(
 			password + user.salt,
 			user.password,

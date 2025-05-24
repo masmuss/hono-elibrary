@@ -64,6 +64,20 @@
       "when": 1747993911698,
       "tag": "0008_mighty_firestar",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1748044590585,
+      "tag": "0009_rare_shape",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1748044720417,
+      "tag": "0010_dizzy_guardsmen",
+      "breakpoints": true
     }
   ]
 }
