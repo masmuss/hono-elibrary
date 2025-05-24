@@ -17,7 +17,6 @@ export class LoanHandler extends BaseHandler {
 			const filter = c.req.valid("query");
 			const loans = await this.repository.getAllLoans(filter);
 
-			console.log("Loans: ", loans);
 			return c.json(
 				this.responseBuilder(loans, "Loans retrieved successfully"),
 			);

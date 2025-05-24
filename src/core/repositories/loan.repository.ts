@@ -1,6 +1,5 @@
 import { books, loans } from "@/db/schema";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
-import type { PaginatedData } from "../base/types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Loan } from "../types/loan";
 import type { Filter } from "./types";
@@ -12,7 +11,7 @@ export class LoanRepository extends SoftDeleteMixin {
 		});
 	}
 
-	async getAllLoans(filter: Partial<Loan> & Filter): Promise<PaginatedData> {
+	async getAllLoans(filter: Partial<Loan> & Filter) {
 		const filtersBuilder = this.filterBuilder(filter);
 		const searchBuilder = filter.search
 			? this.searchBuilder(filter.search, ["memberId"])
@@ -27,25 +26,37 @@ export class LoanRepository extends SoftDeleteMixin {
 		const whereCondition =
 			whereConditions.length > 1 ? and(...whereConditions) : whereConditions[0];
 
-		const query = this.db
-			.select({
-				id: loans.id,
-				memberId: loans.memberId,
-				bookId: loans.bookId,
-				returnDate: loans.returnDate,
-				returnedAt: loans.returnedAt,
-				createdAt: loans.createdAt,
-			})
-			.from(this.table)
-			.where(whereCondition);
+		const query = await this.db.query.loans.findMany({
+			where: whereCondition,
+			columns: {
+				id: true,
+				loanDate: true,
+				returnDate: true,
+				returnedAt: true,
+			},
+			with: {
+				book: {
+					columns: {
+						title: true,
+						isbn: true,
+						author: true,
+						publisher: true,
+					},
+				},
+				member: {
+					columns: {},
+					with: {
+						user: {
+							columns: {
+								name: true,
+							},
+						},
+					},
+				},
+			},
+		});
 
-		return await this.withPagination(
-			query.$dynamic(),
-			filter.orderBy,
-			whereCondition,
-			filter.page,
-			filter.pageSize,
-		);
+		return { data: query };
 	}
 
 	async hasActiveLoan(memberId: string, bookId: number): Promise<boolean> {
@@ -59,11 +70,7 @@ export class LoanRepository extends SoftDeleteMixin {
 		return !!activeLoan;
 	}
 
-	async createLoan(
-		memberId: string,
-		bookId: number,
-		returnDate: Date,
-	): Promise<Loan | null> {
+	async createLoan(memberId: string, bookId: number, returnDate: Date) {
 		const alreadyLoaned = await this.hasActiveLoan(memberId, bookId);
 		if (alreadyLoaned) {
 			throw new Error("You already have an active loan for this book");
@@ -91,7 +98,37 @@ export class LoanRepository extends SoftDeleteMixin {
 				})
 				.returning();
 
-			return loan[0];
+			const query = await trx.query.loans.findFirst({
+				where: eq(loans.id, loan[0].id),
+				columns: {
+					id: true,
+					loanDate: true,
+					returnDate: true,
+					returnedAt: true,
+				},
+				with: {
+					book: {
+						columns: {
+							title: true,
+							isbn: true,
+							author: true,
+							publisher: true,
+						},
+					},
+					member: {
+						columns: {},
+						with: {
+							user: {
+								columns: {
+									name: true,
+								},
+							},
+						},
+					},
+				},
+			});
+
+			return query ?? null;
 		});
 	}
 

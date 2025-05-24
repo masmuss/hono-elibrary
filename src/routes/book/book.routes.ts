@@ -1,7 +1,8 @@
 import { BaseRoutes } from "@/core/base/base-routes";
 import jsonContentRequired from "@/core/helpers/json-content-required";
-import { IdParamSchema, PaginationQuerySchema } from "@/core/helpers/schemas";
+import { idParamSchema } from "@/core/helpers/schemas";
 import {
+	getAllBooksQuerySchema,
 	getAllBooksSuccessResponse,
 	getBookSuccessResponse,
 } from "@/core/schemas/book.schema";
@@ -23,7 +24,7 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books",
 		method: "get",
 		request: {
-			query: PaginationQuerySchema,
+			query: getAllBooksQuerySchema,
 		},
 		responses: {
 			[200]: this.successResponse(
@@ -39,7 +40,7 @@ export class BookRoutes extends BaseRoutes {
 		path: "/books/{id}",
 		method: "get",
 		request: {
-			params: IdParamSchema,
+			params: idParamSchema,
 		},
 		responses: {
 			[200]: this.successResponse(
@@ -58,7 +59,7 @@ export class BookRoutes extends BaseRoutes {
 		method: "post",
 		request: {
 			headers: authHeadersSchema,
-			body: jsonContentRequired(createBookSchema, "Create book schema"),
+			body: jsonContentRequired(createBookSchema, "Create book schema payload"),
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
@@ -77,8 +78,8 @@ export class BookRoutes extends BaseRoutes {
 		method: "put",
 		request: {
 			headers: authHeadersSchema,
-			params: IdParamSchema,
-			body: jsonContentRequired(updateBookSchema, "Update book schema"),
+			params: idParamSchema,
+			body: jsonContentRequired(updateBookSchema, "Update book schema payload"),
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
@@ -98,7 +99,7 @@ export class BookRoutes extends BaseRoutes {
 		method: "delete",
 		request: {
 			headers: authHeadersSchema,
-			params: IdParamSchema,
+			params: idParamSchema,
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
@@ -115,7 +116,7 @@ export class BookRoutes extends BaseRoutes {
 		method: "post",
 		request: {
 			headers: authHeadersSchema,
-			params: IdParamSchema,
+			params: idParamSchema,
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
@@ -132,7 +133,7 @@ export class BookRoutes extends BaseRoutes {
 		method: "delete",
 		request: {
 			headers: authHeadersSchema,
-			params: IdParamSchema,
+			params: idParamSchema,
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {

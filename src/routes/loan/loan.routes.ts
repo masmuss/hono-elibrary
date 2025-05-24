@@ -1,6 +1,6 @@
 import { BaseRoutes } from "@/core/base/base-routes";
 import jsonContentRequired from "@/core/helpers/json-content-required";
-import { PaginationQuerySchema, UUIDParamSchema } from "@/core/helpers/schemas";
+import { UUIDParamSchema, searchQuerySchema } from "@/core/helpers/schemas";
 import { errorResponse } from "@/core/schemas/errors.schema";
 import {
 	getAllLoansSuccessResponse,
@@ -21,7 +21,7 @@ export class LoanRoutes extends BaseRoutes {
 		method: "get",
 		request: {
 			headers: authHeadersSchema,
-			query: PaginationQuerySchema,
+			query: searchQuerySchema,
 		},
 		middleware: [
 			authMiddleware,
