@@ -4,6 +4,7 @@ import {
 	integer,
 	pgTable,
 	text,
+	timestamp,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
@@ -49,9 +50,11 @@ export const books = pgTable("books", {
 	synopsis: text("synopsis"),
 	author: varchar("author", { length: 255 }),
 	publisher: varchar("publisher", { length: 255 }),
-	pages: integer("pages").notNull(),
-	year: integer("year").notNull(),
-	stock: integer("stock").notNull().default(1),
+	totalPages: integer("total_pages").notNull(),
+	coverImageUrl: varchar("cover_image_url", { length: 255 }),
+	publicationYear: integer("publication_year").notNull(),
+	totalCopies: integer("total_copies").notNull().default(1),
+	availableCopies: integer("available_copies").notNull().default(1),
 	categoryId: integer("category_id")
 		.references(() => categories.id)
 		.notNull(),
@@ -87,11 +90,20 @@ export const loans = pgTable("loans", {
 	memberId: uuid("member_id")
 		.references(() => members.id)
 		.notNull(),
-	bookId: integer("book_id")
-		.references(() => books.id)
+	librarianId: uuid("librarian_id")
+		.references(() => users.id)
 		.notNull(),
-	loanDate: date("loan_date").defaultNow(),
-	returnDate: date("return_date"),
+	bookId: integer("book_id")
+		.references(() => books.id, { onDelete: "cascade" })
+		.notNull(),
+	loanDate: timestamp("loan_date").notNull().defaultNow(),
+	dueDate: timestamp("due_date"),
+	status: varchar("status", {
+		length: 20,
+		enum: ["pending", "approved", "rejected"],
+	})
+		.notNull()
+		.default("pending"),
 	returnedAt: date("returned_at"), // jika null berarti belum dikembalikan
 	...timestamps,
 });
@@ -104,5 +116,9 @@ export const loanRelations = relations(loans, ({ one }) => ({
 	book: one(books, {
 		fields: [loans.bookId],
 		references: [books.id],
+	}),
+	librarian: one(users, {
+		fields: [loans.librarianId],
+		references: [users.id],
 	}),
 }));
