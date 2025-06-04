@@ -35,7 +35,8 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 				id: books.id,
 				title: books.title,
 				isbn: books.isbn,
-				stock: books.stock,
+				totalCopies: books.totalCopies,
+				availableCopies: books.availableCopies,
 				author: books.author,
 				createdAt: books.createdAt,
 			})
