@@ -8,6 +8,8 @@ const handlers = new LoanHandler();
 const router = createRouter()
 	.openapi(routes.allLoans, handlers.getAllLoans)
 	.openapi(routes.create, handlers.createLoan)
+	.openapi(routes.approve, handlers.approveLoan)
+	.openapi(routes.reject, handlers.rejectLoan)
 	.openapi(routes.return, handlers.returnLoan);
 
 export default router;

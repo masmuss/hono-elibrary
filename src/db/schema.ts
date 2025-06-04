@@ -90,9 +90,7 @@ export const loans = pgTable("loans", {
 	memberId: uuid("member_id")
 		.references(() => members.id)
 		.notNull(),
-	librarianId: uuid("librarian_id")
-		.references(() => users.id)
-		.notNull(),
+	librarianId: uuid("librarian_id").references(() => users.id),
 	bookId: integer("book_id")
 		.references(() => books.id, { onDelete: "cascade" })
 		.notNull(),
@@ -100,10 +98,11 @@ export const loans = pgTable("loans", {
 	dueDate: timestamp("due_date"),
 	status: varchar("status", {
 		length: 20,
-		enum: ["pending", "approved", "rejected"],
+		enum: ["pending", "approved", "rejected", "returned"],
 	})
 		.notNull()
 		.default("pending"),
+	approvedAt: timestamp("approved_at"),
 	returnedAt: date("returned_at"), // jika null berarti belum dikembalikan
 	...timestamps,
 });

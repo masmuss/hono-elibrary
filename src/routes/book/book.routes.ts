@@ -12,7 +12,7 @@ import {
 	createBookSchema,
 	updateBookSchema,
 } from "@/core/validations/book.validation";
-import { UserRole } from "@/lib/constants/roles";
+import { UserRole } from "@/lib/constants/enums/user-roles.enum";
 import { authMiddleware } from "@/middlewares/auth";
 import { authorizeRole } from "@/middlewares/authorization";
 import { createRoute } from "@hono/zod-openapi";

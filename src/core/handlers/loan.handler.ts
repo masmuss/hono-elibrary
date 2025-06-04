@@ -1,7 +1,9 @@
 import type { AppRouteHandler } from "@/lib/types";
 import type {
 	LoanAll,
+	LoanApprove,
 	LoanCreate,
+	LoanReject,
 	LoanReturn,
 } from "@/routes/loan/loan.routes";
 import { BaseHandler } from "../base/base-handler";
@@ -35,16 +37,12 @@ export class LoanHandler extends BaseHandler {
 				throw new Error("Invalid request body");
 			}
 
-			const { memberId, bookId, returnDate } = body;
+			const { memberId, bookId } = body;
 
-			if (!memberId || !bookId || !returnDate) {
+			if (!memberId || !bookId) {
 				throw new Error("Missing required fields");
 			}
-			const loan = await this.repository.createLoan(
-				memberId,
-				bookId,
-				returnDate,
-			);
+			const loan = await this.repository.createLoan(memberId, bookId);
 
 			return c.json(
 				this.responseBuilder({ data: loan }, "Loan created successfully"),
@@ -52,6 +50,46 @@ export class LoanHandler extends BaseHandler {
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to create loan", error as Error),
+				400,
+			);
+		}
+	};
+
+	approveLoan: AppRouteHandler<LoanApprove> = async (c) => {
+		try {
+			const { id } = c.req.valid("param");
+			const librarianId = c.get("user").id;
+
+			const loan = await this.repository.approveLoan(id, librarianId);
+
+			if (!loan) {
+				throw new Error("Failed to approve loan");
+			}
+
+			return c.json(this.responseBuilder(loan, "Loan approved successfully"));
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(null, "Failed to approve loan", error as Error),
+				400,
+			);
+		}
+	};
+
+	rejectLoan: AppRouteHandler<LoanReject> = async (c) => {
+		try {
+			const { id } = c.req.valid("param");
+			const librarianId = c.get("user").id;
+
+			const loan = await this.repository.rejectLoan(id, librarianId);
+
+			if (!loan) {
+				throw new Error("Failed to reject loan");
+			}
+
+			return c.json(this.responseBuilder(loan, "Loan rejected successfully"));
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(null, "Failed to reject loan", error as Error),
 				400,
 			);
 		}

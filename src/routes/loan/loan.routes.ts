@@ -8,7 +8,7 @@ import {
 } from "@/core/schemas/loan.schema";
 import { authHeadersSchema } from "@/core/validations/auth.validation";
 import { createLoanSchema } from "@/core/validations/loan.validation";
-import { UserRole } from "@/lib/constants/roles";
+import { UserRole } from "@/lib/constants/enums/user-roles.enum";
 import { authMiddleware } from "@/middlewares/auth";
 import { authorizeRole } from "@/middlewares/authorization";
 import { createRoute } from "@hono/zod-openapi";
@@ -58,6 +58,46 @@ export class LoanRoutes extends BaseRoutes {
 		},
 	});
 
+	approve = createRoute({
+		tags: ["Loan"],
+		description: "Approve a loan",
+		path: "/loans/{id}/approve",
+		method: "post",
+		request: {
+			headers: authHeadersSchema,
+			params: UUIDParamSchema,
+		},
+		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
+		responses: {
+			[200]: this.successResponse(
+				getLoanSuccessResponse,
+				"Loan approved successfully",
+			),
+			[400]: this.errorResponse(errorResponse, "Invalid request body"),
+			[404]: this.errorResponse(errorResponse, "Loan not found"),
+		},
+	});
+
+	reject = createRoute({
+		tags: ["Loan"],
+		description: "Reject a loan",
+		path: "/loans/{id}/reject",
+		method: "post",
+		request: {
+			headers: authHeadersSchema,
+			params: UUIDParamSchema,
+		},
+		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
+		responses: {
+			[200]: this.successResponse(
+				getLoanSuccessResponse,
+				"Loan rejected successfully",
+			),
+			[400]: this.errorResponse(errorResponse, "Invalid request body"),
+			[404]: this.errorResponse(errorResponse, "Loan not found"),
+		},
+	});
+
 	return = createRoute({
 		tags: ["Loan"],
 		description: "Return a loan",
@@ -84,4 +124,6 @@ export class LoanRoutes extends BaseRoutes {
 
 export type LoanAll = typeof LoanRoutes.prototype.allLoans;
 export type LoanCreate = typeof LoanRoutes.prototype.create;
+export type LoanApprove = typeof LoanRoutes.prototype.approve;
+export type LoanReject = typeof LoanRoutes.prototype.reject;
 export type LoanReturn = typeof LoanRoutes.prototype.return;

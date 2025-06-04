@@ -1,7 +1,7 @@
 import { books, loans } from "@/db/schema";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
-import type { Loan } from "../types/loan";
+import type { Loan, LoanQueryResult } from "../types/loan";
 import type { Filter } from "./types";
 
 export class LoanRepository extends SoftDeleteMixin {
@@ -11,27 +11,18 @@ export class LoanRepository extends SoftDeleteMixin {
 		});
 	}
 
-	async getAllLoans(filter: Partial<Loan> & Filter) {
-		const filtersBuilder = this.filterBuilder(filter);
-		const searchBuilder = filter.search
-			? this.searchBuilder(filter.search, ["memberId"])
-			: null;
-
-		const whereConditions = [
-			isNull(loans.deletedAt),
-			...filtersBuilder,
-			...(searchBuilder ? [searchBuilder] : []),
-		].filter(Boolean);
-
-		const whereCondition =
-			whereConditions.length > 1 ? and(...whereConditions) : whereConditions[0];
-
-		const query = await this.db.query.loans.findMany({
-			where: whereCondition,
+	private async getLoanDetails(
+		loanId: string,
+		trx?: any,
+	): Promise<LoanQueryResult> {
+		const dbInstance = trx || this.db;
+		return await dbInstance.query.loans.findFirst({
+			where: eq(loans.id, loanId),
 			columns: {
 				id: true,
 				loanDate: true,
-				returnDate: true,
+				dueDate: true,
+				status: true,
 				returnedAt: true,
 			},
 			with: {
@@ -53,6 +44,67 @@ export class LoanRepository extends SoftDeleteMixin {
 						},
 					},
 				},
+				librarian: {
+					// Selalu sertakan untuk konsistensi, bisa difilter nanti jika tidak perlu
+					columns: {
+						name: true,
+						email: true,
+					},
+				},
+			},
+		});
+	}
+
+	async getAllLoans(filter: Partial<Loan> & Filter) {
+		const filtersBuilder = this.filterBuilder(filter);
+		const searchBuilder = filter.search
+			? this.searchBuilder(filter.search, ["memberId"])
+			: undefined;
+
+		const whereConditions = [
+			isNull(loans.deletedAt),
+			...filtersBuilder,
+			searchBuilder,
+		].filter(Boolean);
+
+		const whereCondition =
+			whereConditions.length > 0 ? and(...whereConditions) : undefined;
+
+		// Menggunakan struktur query yang sama dengan getLoanDetails untuk konsistensi
+		const query = await this.db.query.loans.findMany({
+			where: whereCondition,
+			columns: {
+				id: true,
+				loanDate: true,
+				dueDate: true,
+				returnedAt: true,
+				status: true,
+			},
+			with: {
+				book: {
+					columns: {
+						title: true,
+						isbn: true,
+						author: true,
+						publisher: true,
+					},
+				},
+				member: {
+					columns: {},
+					with: {
+						user: {
+							columns: {
+								name: true,
+							},
+						},
+					},
+				},
+				librarian: {
+					columns: {
+						name: true,
+						email: true,
+					},
+				},
 			},
 		});
 
@@ -70,92 +122,183 @@ export class LoanRepository extends SoftDeleteMixin {
 		return !!activeLoan;
 	}
 
-	async createLoan(memberId: string, bookId: number, returnDate: Date) {
-		const alreadyLoaned = await this.hasActiveLoan(memberId, bookId);
-		if (alreadyLoaned) {
-			throw new Error("You already have an active loan for this book");
+	async createLoan(memberId: string, bookId: number): Promise<LoanQueryResult> {
+		if (await this.hasActiveLoan(memberId, bookId)) {
+			throw new Error("Anggota sudah memiliki pinjaman aktif untuk buku ini.");
 		}
 
 		return await this.db.transaction(async (trx) => {
 			const book = await trx.query.books.findFirst({
 				where: eq(books.id, bookId),
+				columns: { availableCopies: true },
 			});
-			if (!book || book.stock < 1) {
-				throw new Error("Book is out of stock");
+
+			if (!book) {
+				throw new Error("Buku tidak ditemukan.");
+			}
+			if (book.availableCopies < 1) {
+				throw new Error("Stok buku habis. Silakan coba lagi nanti.");
 			}
 
-			await trx
-				.update(books)
-				.set({ stock: book.stock - 1 })
-				.where(eq(books.id, bookId));
-
-			const loan = await trx
+			const [insertedLoan] = await trx
 				.insert(loans)
 				.values({
 					memberId,
 					bookId,
-					returnDate: returnDate.toString(),
 				})
-				.returning();
+				.returning({ id: loans.id });
 
-			const query = await trx.query.loans.findFirst({
-				where: eq(loans.id, loan[0].id),
-				columns: {
-					id: true,
-					loanDate: true,
-					returnDate: true,
-					returnedAt: true,
-				},
-				with: {
-					book: {
-						columns: {
-							title: true,
-							isbn: true,
-							author: true,
-							publisher: true,
-						},
-					},
-					member: {
-						columns: {},
-						with: {
-							user: {
-								columns: {
-									name: true,
-								},
-							},
-						},
-					},
-				},
-			});
+			if (!insertedLoan || !insertedLoan.id) {
+				throw new Error("Gagal membuat data pinjaman.");
+			}
 
-			return query ?? null;
+			const newLoanDetails = await this.getLoanDetails(insertedLoan.id, trx);
+			if (!newLoanDetails) {
+				throw new Error("Gagal mengambil detail pinjaman setelah pembuatan.");
+			}
+			return newLoanDetails;
 		});
 	}
 
-	async returnLoan(loanId: string): Promise<Loan | null> {
+	private async findLoanForModification(
+		loanId: string,
+		trx: any,
+	): Promise<Loan> {
+		const loan = await trx.query.loans.findFirst({
+			where: eq(loans.id, loanId),
+		});
+		if (!loan) {
+			throw new Error("Peminjaman tidak ditemukan.");
+		}
+		if (loan.returnedAt) {
+			throw new Error("Peminjaman sudah dikembalikan.");
+		}
+
+		if (loan.status === "rejected" || loan.status === "approved") {
+			throw new Error(`Peminjaman sudah dalam status: ${loan.status}.`);
+		}
+		return loan;
+	}
+
+	async approveLoan(
+		loanId: string,
+		librarianId: string,
+	): Promise<{ data: LoanQueryResult }> {
+		return await this.db.transaction(async (trx) => {
+			const loan = await this.findLoanForModification(loanId, trx);
+
+			const book = await trx.query.books.findFirst({
+				where: eq(books.id, loan.bookId),
+				columns: { availableCopies: true, id: true },
+			});
+
+			if (!book) {
+				throw new Error("Buku terkait peminjaman tidak ditemukan.");
+			}
+
+			if (book.availableCopies < 1) {
+				await trx
+					.update(books)
+					.set({ availableCopies: sql`${books.availableCopies} - 1` })
+					.where(eq(books.id, loan.bookId));
+			}
+
+			await trx
+				.update(loans)
+				.set({
+					status: "approved",
+					librarianId,
+					dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+					approvedAt: new Date(),
+				})
+				.where(eq(loans.id, loanId));
+
+			const updatedLoanDetails = await this.getLoanDetails(loanId, trx);
+			if (!updatedLoanDetails) {
+				throw new Error("Gagal mengambil detail pinjaman setelah persetujuan.");
+			}
+			return { data: updatedLoanDetails };
+		});
+	}
+
+	async rejectLoan(
+		loanId: string,
+		librarianId: string,
+	): Promise<{ data: LoanQueryResult }> {
+		return await this.db.transaction(async (trx) => {
+			const loan = await this.findLoanForModification(loanId, trx);
+
+			const book = await trx.query.books.findFirst({
+				where: eq(books.id, loan.bookId),
+				columns: { id: true },
+			});
+
+			if (book) {
+				await trx
+					.update(books)
+					.set({ availableCopies: sql`${books.availableCopies} + 1` })
+					.where(eq(books.id, loan.bookId));
+			}
+
+			await trx
+				.update(loans)
+				.set({
+					status: "rejected",
+					librarianId,
+				})
+				.where(eq(loans.id, loanId));
+
+			const updatedLoanDetails = await this.getLoanDetails(loanId, trx);
+			if (!updatedLoanDetails) {
+				throw new Error("Gagal mengambil detail pinjaman setelah penolakan.");
+			}
+			return { data: updatedLoanDetails };
+		});
+	}
+
+	async returnLoan(loanId: string): Promise<LoanQueryResult> {
 		return await this.db.transaction(async (trx) => {
 			const loan = await trx.query.loans.findFirst({
 				where: eq(loans.id, loanId),
+				columns: { id: true, returnedAt: true, bookId: true, status: true },
 			});
-			if (!loan || loan.returnedAt) {
-				throw new Error("Loan not found or already returned");
+
+			if (!loan) {
+				throw new Error("Peminjaman tidak ditemukan.");
+			}
+			if (loan.returnedAt) {
+				throw new Error("Peminjaman sudah dikembalikan sebelumnya.");
+			}
+
+			if (loan.status !== "approved") {
+				throw new Error(
+					`Peminjaman tidak dapat dikembalikan karena statusnya: ${loan.status}.`,
+				);
 			}
 
 			await trx
 				.update(books)
-				.set({ stock: sql`${books.stock} + 1` })
+				.set({ availableCopies: sql`${books.availableCopies} + 1` })
 				.where(eq(books.id, loan.bookId));
 
+			const returnedDate = new Date().toString();
 			await trx
 				.update(loans)
-				.set({ returnedAt: new Date().toISOString() })
+				.set({
+					returnedAt: returnedDate,
+					status: "returned",
+				})
 				.where(eq(loans.id, loanId));
 
-			const updatedLoan = await trx.query.loans.findFirst({
-				where: eq(loans.id, loanId),
-			});
+			const updatedLoanDetails = await this.getLoanDetails(loanId, trx);
 
-			return updatedLoan ?? null;
+			if (!updatedLoanDetails) {
+				throw new Error(
+					"Gagal mengambil detail pinjaman setelah pengembalian.",
+				);
+			}
+
+			return updatedLoanDetails;
 		});
 	}
 }

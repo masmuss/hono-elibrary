@@ -16,9 +16,4 @@ export const createLoanSchema = z.object({
 		description: "Unique identifier for the book",
 		example: 10,
 	}),
-	returnDate: z.string().datetime().openapi({
-		description:
-			"Date when the loan is due to be returned (in ISO 8601 format)",
-		example: "2023-10-15T00:00:00Z",
-	}),
 });
