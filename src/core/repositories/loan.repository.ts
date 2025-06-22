@@ -281,7 +281,7 @@ export class LoanRepository extends SoftDeleteMixin {
 				.set({ availableCopies: sql`${books.availableCopies} + 1` })
 				.where(eq(books.id, loan.bookId));
 
-			const returnedDate = new Date().toString();
+			const returnedDate = new Date().toISOString();
 			await trx
 				.update(loans)
 				.set({

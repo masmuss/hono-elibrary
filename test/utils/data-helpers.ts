@@ -38,7 +38,7 @@ export async function createTestCategory() {
     return category;
 }
 
-export async function createTestBook(categoryId?: number, userId?: string) {
+export async function createTestBook(categoryId?: number) {
     const category = categoryId ? await db.query.categories.findFirst({ where: eq(schema.categories.id, categoryId) }) : await createTestCategory();
     if (!category) {
         throw new Error('Failed to create or find test category.');

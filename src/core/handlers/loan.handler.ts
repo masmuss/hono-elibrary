@@ -21,6 +21,7 @@ export class LoanHandler extends BaseHandler {
 
 			return c.json(
 				this.responseBuilder(loans, "Loans retrieved successfully"),
+				200,
 			);
 		} catch (error: unknown) {
 			return c.json(
@@ -46,6 +47,7 @@ export class LoanHandler extends BaseHandler {
 
 			return c.json(
 				this.responseBuilder({ data: loan }, "Loan created successfully"),
+				201,
 			);
 		} catch (error: unknown) {
 			return c.json(
@@ -66,7 +68,10 @@ export class LoanHandler extends BaseHandler {
 				throw new Error("Failed to approve loan");
 			}
 
-			return c.json(this.responseBuilder(loan, "Loan approved successfully"));
+			return c.json(
+				this.responseBuilder(loan, "Loan approved successfully"),
+				200,
+			);
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to approve loan", error as Error),
@@ -86,7 +91,10 @@ export class LoanHandler extends BaseHandler {
 				throw new Error("Failed to reject loan");
 			}
 
-			return c.json(this.responseBuilder(loan, "Loan rejected successfully"));
+			return c.json(
+				this.responseBuilder(loan, "Loan rejected successfully"),
+				200,
+			);
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to reject loan", error as Error),
@@ -109,7 +117,10 @@ export class LoanHandler extends BaseHandler {
 				throw new Error("Failed to return loan");
 			}
 
-			return c.json(this.responseBuilder(loan, "Loan returned successfully"));
+			return c.json(
+				this.responseBuilder(loan, "Loan returned successfully"),
+				200,
+			);
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to return loan", error as Error),

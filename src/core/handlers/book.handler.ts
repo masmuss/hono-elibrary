@@ -174,7 +174,7 @@ export class BookHandler extends BaseHandler {
 			}
 
 			return c.json(
-				this.responseBuilder(book, "Book deleted successfully"),
+				this.responseBuilder(book, "Book permanently deleted successfully"),
 				200,
 			);
 		} catch (error: unknown) {

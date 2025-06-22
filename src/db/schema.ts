@@ -73,7 +73,7 @@ export const members = pgTable("members", {
 	userId: uuid("user_id")
 		.references(() => users.id)
 		.notNull(),
-	phone: varchar("phone", { length: 20 }),
+	phone: varchar("phone", { length: 50 }),
 	address: text("address"),
 	...timestamps,
 });
