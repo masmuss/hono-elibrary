@@ -4,6 +4,7 @@
   "description": "A simple e-library API using Hono and Drizzle ORM",
   "scripts": {
     "dev": "bun run --hot src/index.ts",
+    "test": "bun test --env-file=.env.test --preload ./test/setup.ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
@@ -11,8 +12,7 @@
     "lint": "bunx biome lint",
     "lint:check": "bunx biome check --staged",
     "lint:fix": "bunx biome lint --write",
-    "format": "bunx biome format --write .",
-    "prepare": "husky"
+    "format": "bunx biome format --write ."
   },
   "dependencies": {
     "@hono/zod-openapi": "^0.19.6",
@@ -26,6 +26,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@faker-js/faker": "^9.8.0",
     "@types/bun": "latest",
     "@types/pg": "^8.12.0",
     "drizzle-kit": "^0.31.1",

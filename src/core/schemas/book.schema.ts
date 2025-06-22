@@ -23,7 +23,7 @@ export const getAllBooksSuccessResponse = z.object({
 			id: true,
 			isbn: true,
 			title: true,
-			stock: true,
+			availableCopies: true,
 			author: true,
 			createdAt: true,
 		}),

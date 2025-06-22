@@ -1,0 +1,11 @@
+node_modules
+
+bun.lockb
+.env
+
+dist
+build
+
+Dockerfile
+Dockerfile.dev
+docker-compose.yml

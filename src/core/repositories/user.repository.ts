@@ -1,4 +1,5 @@
-import { users } from "@/db/schema";
+import { roles, users } from "@/db/schema";
+import { UserRole } from "@/lib/constants/enums/user-roles.enum";
 import { randomUUIDv7 } from "bun";
 import { desc, eq, or } from "drizzle-orm";
 import { BaseRepository } from "../base/base-repository";
@@ -25,8 +26,11 @@ export class UserRepository extends BaseRepository {
 
 	async register(data: Register): Promise<{ data: Register } | null> {
 		const isExists = await this.isUserExists(data.username, data.email);
+		const role = await this.db.query.roles.findFirst({
+			where: eq(roles.name, UserRole.MEMBER),
+		});
 
-		if (isExists) return null;
+		if (isExists || !role) return null;
 
 		const salt = randomUUIDv7();
 		const user = await this.db
@@ -34,7 +38,7 @@ export class UserRepository extends BaseRepository {
 			.values({
 				...data,
 				password: await Bun.password.hash(data.password + salt),
-				roleId: 2,
+				roleId: role.id,
 				salt,
 			})
 			.returning();

@@ -15,6 +15,7 @@
       },
       "devDependencies": {
         "@biomejs/biome": "1.9.4",
+        "@faker-js/faker": "^9.8.0",
         "@types/bun": "latest",
         "@types/pg": "^8.12.0",
         "drizzle-kit": "^0.31.1",
@@ -98,6 +99,8 @@
     "@esbuild/win32-ia32": ["@esbuild/win32-ia32@0.25.4", "", { "os": "win32", "cpu": "ia32" }, "sha512-i1sW+1i+oWvQzSgfRcxxG2k4I9n3O9NRqy8U+uugaT2Dy7kLO9Y7wI72haOahxceMX8hZAzgGou1FhndRldxRg=="],
 
     "@esbuild/win32-x64": ["@esbuild/win32-x64@0.25.4", "", { "os": "win32", "cpu": "x64" }, "sha512-nOT2vZNw6hJ+z43oP1SPea/G/6AbN6X+bGNhNuq8NtRHy4wsMhw765IKLNmnjek7GvjWBYQ8Q5VBoYTFg9y1UQ=="],
+
+    "@faker-js/faker": ["@faker-js/faker@9.8.0", "", {}, "sha512-U9wpuSrJC93jZBxx/Qq2wPjCuYISBueyVUGK7qqdmj7r/nxaxwW8AQDCLeRO7wZnjj94sh3p246cAYjUKuqgfg=="],
 
     "@hono/zod-openapi": ["@hono/zod-openapi@0.19.6", "", { "dependencies": { "@asteasolutions/zod-to-openapi": "^7.3.0", "@hono/zod-validator": "^0.5.0" }, "peerDependencies": { "hono": ">=4.3.6", "zod": "3.*" } }, "sha512-qD2I0i5Ksry8gf47rXR6tuUAfv5S/wRZPRUNn+y8vOkgArDtIs30Ha3KGHeuGhcMk773D197IlPUppSCbHt6iQ=="],
 

@@ -31,13 +31,18 @@ export class AuthHandler extends BaseHandler {
 						null,
 						"User with same username or email already exists",
 					),
+					409,
 				);
 			}
 
-			return c.json(this.responseBuilder(user, "User registered successfully"));
+			return c.json(
+				this.responseBuilder(user, "User registered successfully"),
+				201,
+			);
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to register user", error as Error),
+				500,
 			);
 		}
 	};
@@ -55,6 +60,7 @@ export class AuthHandler extends BaseHandler {
 			if (!user) {
 				return c.json(
 					this.responseBuilder(null, "Invalid username or password"),
+					401,
 				);
 			}
 
@@ -89,6 +95,7 @@ export class AuthHandler extends BaseHandler {
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to login user", error as Error),
+				500,
 			);
 		}
 	};
@@ -106,6 +113,7 @@ export class AuthHandler extends BaseHandler {
 					{ data: user },
 					"User profile retrieved successfully",
 				),
+				200,
 			);
 		} catch (error: unknown) {
 			return c.json(
@@ -114,6 +122,7 @@ export class AuthHandler extends BaseHandler {
 					"Failed to get user profile",
 					error as Error,
 				),
+				500,
 			);
 		}
 	};
@@ -123,10 +132,11 @@ export class AuthHandler extends BaseHandler {
 			c.set("user", null);
 			c.set("session", null);
 
-			return c.json(this.responseBuilder(null, "Logout successful"));
+			return c.json(this.responseBuilder(null, "Logout successful"), 200);
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to logout user", error as Error),
+				500,
 			);
 		}
 	};
