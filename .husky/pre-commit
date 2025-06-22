@@ -1,23 +1,15 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
-# --- Pesan Pembuka yang Menarik ---
 echo "
 🚀 Siap-siap, Kapten! Menjalankan pemeriksaan pra-commit...
 ------------------------------------------------------
 ✨ Memastikan kodemu berkilau seperti bintang!
 "
 
-# Menjalankan linter dan formatter pada file yang di-stage
-bun run lint:check
+bun lint
 
-# Menyimpan status keluar dari perintah terakhir
-# 0 berarti sukses, selain itu berarti gagal
 exit_code=$?
 
 echo "------------------------------------------------------"
 
-# --- Pesan Penutup Berdasarkan Hasil ---
 if [ $exit_code -eq 0 ]; then
   echo "✅ Kualitas Terjaga! Semua cek lolos. Siap untuk meluncur! 🚀"
 else
