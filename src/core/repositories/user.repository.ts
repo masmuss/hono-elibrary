@@ -2,11 +2,12 @@ import { roles, users } from "@/db/schema";
 import { UserRole } from "@/lib/constants/enums/user-roles.enum";
 import { randomUUIDv7 } from "bun";
 import { desc, eq, or } from "drizzle-orm";
-import { BaseRepository } from "../base/base-repository";
+import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Register } from "../types/auth";
-import type { User } from "../types/user";
+import type { User, UserInsert, UserUpdate } from "../types/user";
+import type { Filter } from "./types";
 
-export class UserRepository extends BaseRepository {
+export class UserRepository extends SoftDeleteMixin {
 	constructor() {
 		super(users, {
 			latest: desc(users.createdAt),
@@ -70,5 +71,93 @@ export class UserRepository extends BaseRepository {
 		if (!isValid) return null;
 
 		return user;
+	}
+
+	async getAllUsers(filter: Filter) {
+		const query = this.db
+			.select({
+				id: users.id,
+				name: users.name,
+				username: users.username,
+				email: users.email,
+				createdAt: users.createdAt,
+				role: roles.name,
+			})
+			.from(this.table)
+			.leftJoin(roles, eq(users.roleId, roles.id));
+
+		return await this.withPagination(
+			query.$dynamic(),
+			filter.orderBy,
+			undefined,
+			filter.page,
+			filter.pageSize,
+		);
+	}
+
+	async createUserByAdmin(data: UserInsert) {
+		const isExists = await this.isUserExists(data.username, data.email);
+		if (isExists) {
+			throw new Error("User with same username or email already exists");
+		}
+
+		const salt = randomUUIDv7();
+		const [newUser] = await this.db
+			.insert(users)
+			.values({
+				...data,
+				password: await Bun.password.hash(data.password + salt),
+				salt,
+			})
+			.returning({
+				id: users.id,
+				name: users.name,
+				username: users.username,
+				email: users.email,
+			});
+
+		return { data: newUser };
+	}
+
+	async byId(id: string): Promise<{ data: any } | null> {
+		const user = await this.db.query.users.findFirst({
+			where: eq(users.id, id),
+			with: {
+				role: {
+					columns: {
+						name: true,
+					},
+				},
+			},
+			columns: {
+				password: false,
+				salt: false,
+			},
+		});
+
+		if (!user) return null;
+		return { data: user };
+	}
+
+	async updateUser(
+		id: string,
+		data: UserUpdate,
+	): Promise<{ data: User } | null> {
+		if (data.password) {
+			const salt = randomUUIDv7();
+			const hashedPassword = await Bun.password.hash(data.password + salt);
+			data.password = hashedPassword;
+			data.salt = salt;
+		}
+
+		const [updatedUser] = await this.db
+			.update(users)
+			.set(data)
+			.where(eq(users.id, id))
+			.returning();
+
+		if (!updatedUser) return null;
+
+		return { data: updatedUser };
 	}
 }
