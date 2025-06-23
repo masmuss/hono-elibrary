@@ -70,7 +70,6 @@ export class LoanRepository extends SoftDeleteMixin {
 		const whereCondition =
 			whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-		// Menggunakan struktur query yang sama dengan getLoanDetails untuk konsistensi
 		const query = await this.db.query.loans.findMany({
 			where: whereCondition,
 			columns: {
@@ -109,6 +108,45 @@ export class LoanRepository extends SoftDeleteMixin {
 		});
 
 		return { data: query };
+	}
+
+	async getLoansByMemberId(memberId: string, filter: Filter) {
+		const query = this.db.query.loans.findMany({
+			where: and(eq(loans.memberId, memberId), isNull(loans.deletedAt)),
+			orderBy: [desc(loans.loanDate)],
+			limit: filter.pageSize || 10,
+			offset: ((filter.page || 1) - 1) * (filter.pageSize || 10),
+			columns: {
+				id: true,
+				loanDate: true,
+				dueDate: true,
+				returnedAt: true,
+				status: true,
+			},
+			with: {
+				book: {
+					columns: {
+						title: true,
+						isbn: true,
+						author: true,
+					},
+				},
+			},
+		});
+
+		const totalQuery = await this.db
+			.select({ count: sql<number>`count(*)` })
+			.from(this.table)
+			.where(eq(loans.memberId, memberId));
+		const total = totalQuery[0].count;
+		const totalPages = Math.ceil(total / (filter.pageSize || 10));
+
+		return {
+			data: await query,
+			total,
+			totalPages,
+			page: filter.page || 1,
+		};
 	}
 
 	async hasActiveLoan(memberId: string, bookId: number): Promise<boolean> {

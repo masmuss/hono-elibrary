@@ -202,4 +202,46 @@ describe("Loan Endpoints", () => {
             expect(body.error).toContain("statusnya: pending");
         });
     });
+
+    describe("GET /api/loans/my-loans", () => {
+        let anotherMember: Member;
+        let anotherMemberToken: string;
+
+        beforeEach(async () => {
+            await createTestLoan(testMember.id, testBook.id, LoanStatus.RETURNED);
+            await createTestLoan(testMember.id, testBook.id, LoanStatus.APPROVED);
+
+            const anotherUser = (await createTestUser(UserRole.MEMBER)).user;
+            anotherMember = await createTestMember(anotherUser.id);
+            anotherMemberToken = await generateAuthToken({ id: anotherUser.id, role: UserRole.MEMBER });
+        });
+
+        it("should return a list of loans belonging to the authenticated member", async () => {
+            const res = await app.request("/api/loans/my-loans", {
+                headers: { Authorization: `Bearer ${memberToken}` },
+            });
+            const body = await res.json() as ApiSuccessResponse<ExtensibleLoan[]>;
+
+            expect(res.status).toBe(200);
+            expect(body.data).toBeArray();
+            expect(body.data.length).toBe(2);
+            expect(body.data[0].book.title).toBe(testBook.title);
+        });
+
+        it("should return an empty array if the member has no loans", async () => {
+            const res = await app.request("/api/loans/my-loans", {
+                headers: { Authorization: `Bearer ${anotherMemberToken}` },
+            });
+            const body = await res.json() as ApiSuccessResponse<ExtensibleLoan[]>;
+
+            expect(res.status).toBe(200);
+            expect(body.data).toBeArray();
+            expect(body.data.length).toBe(0);
+        });
+
+        it("should return 401 for an unauthenticated request", async () => {
+            const res = await app.request("/api/loans/my-loans");
+            expect(res.status).toBe(401);
+        });
+    });
 });

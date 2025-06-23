@@ -1,6 +1,10 @@
 import { BaseRoutes } from "@/core/base/base-routes";
 import jsonContentRequired from "@/core/helpers/json-content-required";
-import { UUIDParamSchema, searchQuerySchema } from "@/core/helpers/schemas";
+import {
+	UUIDParamSchema,
+	paginationQuerySchema,
+	searchQuerySchema,
+} from "@/core/helpers/schemas";
 import { errorResponse } from "@/core/schemas/errors.schema";
 import {
 	getAllLoansSuccessResponse,
@@ -33,6 +37,27 @@ export class LoanRoutes extends BaseRoutes {
 				"Loans retrieved successfully",
 			),
 			[400]: this.errorResponse(errorResponse, "Invalid request body"),
+		},
+	});
+
+	myLoans = createRoute({
+		tags: ["Loan"],
+		description: "Get all loans for the currently authenticated member",
+		path: "/loans/my-loans",
+		method: "get",
+		request: {
+			headers: authHeadersSchema,
+			query: paginationQuerySchema,
+		},
+		middleware: [authMiddleware],
+		responses: {
+			200: this.successResponse(
+				getAllLoansSuccessResponse,
+				"User's loans retrieved successfully",
+			),
+			401: this.errorResponse(errorResponse, "Unauthorized"),
+			404: this.errorResponse(errorResponse, "Member profile not found"),
+			500: this.errorResponse(errorResponse, "Internal Server Error"),
 		},
 	});
 
@@ -123,6 +148,7 @@ export class LoanRoutes extends BaseRoutes {
 }
 
 export type LoanAll = typeof LoanRoutes.prototype.allLoans;
+export type MyLoans = typeof LoanRoutes.prototype.myLoans;
 export type LoanCreate = typeof LoanRoutes.prototype.create;
 export type LoanApprove = typeof LoanRoutes.prototype.approve;
 export type LoanReject = typeof LoanRoutes.prototype.reject;

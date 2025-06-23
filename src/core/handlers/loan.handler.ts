@@ -5,9 +5,11 @@ import type {
 	LoanCreate,
 	LoanReject,
 	LoanReturn,
+	MyLoans,
 } from "@/routes/loan/loan.routes";
 import { BaseHandler } from "../base/base-handler";
 import { LoanRepository } from "../repositories/loan.repository";
+import { MemberRepository } from "../repositories/member.repository";
 
 export class LoanHandler extends BaseHandler {
 	constructor() {
@@ -26,6 +28,38 @@ export class LoanHandler extends BaseHandler {
 		} catch (error: unknown) {
 			return c.json(
 				this.responseBuilder(null, "Failed to retrieve loans", error as Error),
+			);
+		}
+	};
+
+	getMyLoans: AppRouteHandler<MyLoans> = async (c) => {
+		try {
+			const user = c.get("user");
+			const filter = c.req.valid("query");
+
+			const memberRepo = new MemberRepository();
+			const member = await memberRepo.findByUserId(user.id);
+
+			if (!member) {
+				return c.json(
+					this.responseBuilder(null, "Member profile not found for this user"),
+					404,
+				);
+			}
+
+			const loans = await this.repository.getLoansByMemberId(member.id, filter);
+
+			return c.json(
+				this.responseBuilder(loans, "User's loans retrieved successfully"),
+			);
+		} catch (error: unknown) {
+			return c.json(
+				this.responseBuilder(
+					null,
+					"Failed to retrieve user's loans",
+					error as Error,
+				),
+				500,
 			);
 		}
 	};
