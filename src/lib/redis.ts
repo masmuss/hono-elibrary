@@ -1,21 +1,21 @@
 import envRuntime from "@/config/env-runtime";
-import { RedisClient } from "bun";
+import Redis from "ioredis";
 
-const redisClient = new RedisClient(envRuntime.REDIS_URL, {
-	autoReconnect: true,
-	maxRetries: 5,
+const redisClient = new Redis(envRuntime.REDIS_URL, {
+	retryStrategy(times) {
+		const delay = Math.min(times * 50, 2000);
+		return delay;
+	},
 	enableOfflineQueue: true,
+	maxRetriesPerRequest: null,
 });
 
-redisClient
-	.connect()
-	.then(() => {
-		console.log(
-			"✅ Connected to Redis successfully! (using Bun's native client)",
-		);
-	})
-	.catch((error: Error) => {
-		console.error("❌ Could not connect to Redis:", error.message);
-	});
+redisClient.on("connect", () => {
+	console.log("✅ Connected to Redis successfully! (using ioredis)");
+});
+
+redisClient.on("error", (error) => {
+	console.error("❌ Could not connect to Redis (ioredis):", error.message);
+});
 
 export default redisClient;

@@ -5,7 +5,7 @@ describe("Redis Connection and Basic Operations", () => {
     const testKeys: string[] = [];
 
     it("should connect to the Redis server and respond to PING", async () => {
-        const reply = await redisClient.send("PING", ["Hello Redis!"]);
+        const reply = await redisClient.ping('Hello Redis!');
         expect(reply).toBe("Hello Redis!");
     });
 
