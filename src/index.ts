@@ -4,10 +4,11 @@ import index from "./routes";
 import admin from "./routes/admin";
 import auth from "./routes/auth";
 import book from "./routes/book";
+import category from "./routes/category";
 import loan from "./routes/loan";
 
 const app = createApp();
-const routes = [index, auth, book, loan] as const;
+const routes = [index, auth, category, book, loan] as const;
 
 for (const route of routes) {
 	app.route("/api/", route);
