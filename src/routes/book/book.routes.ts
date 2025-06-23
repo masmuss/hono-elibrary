@@ -15,7 +15,7 @@ import {
 import { UserRole } from "@/lib/constants/enums/user-roles.enum";
 import { authMiddleware } from "@/middlewares/auth";
 import { authorizeRole } from "@/middlewares/authorization";
-import { createRoute } from "@hono/zod-openapi";
+import { createRoute, z } from "@hono/zod-openapi";
 
 export class BookRoutes extends BaseRoutes {
 	allBooks = createRoute({
@@ -27,7 +27,7 @@ export class BookRoutes extends BaseRoutes {
 			query: getAllBooksQuerySchema,
 		},
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				getAllBooksSuccessResponse,
 				"Books retrieved successfully",
 			),
@@ -43,12 +43,11 @@ export class BookRoutes extends BaseRoutes {
 			params: idParamSchema,
 		},
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				getBookSuccessResponse,
 				"Book retrieved successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Book ID is required"),
-			[404]: this.errorResponse(errorResponse, "Book not found"),
+			404: this.errorResponse("Book not found"),
 		},
 	});
 
@@ -63,11 +62,13 @@ export class BookRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
-			[201]: this.successResponse(
+			201: this.successResponse(
 				getBookSuccessResponse,
 				"Book created successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Invalid request"),
+			401: this.errorResponse("Unauthorized"),
+			403: this.errorResponse("Forbidden"),
+			422: this.errorResponse("Validation Error"),
 		},
 	});
 
@@ -83,12 +84,14 @@ export class BookRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				getBookSuccessResponse,
 				"Book updated successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Invalid request"),
-			[404]: this.errorResponse(errorResponse, "Book not found"),
+			401: this.errorResponse("Unauthorized"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("Book not found"),
+			422: this.errorResponse("Validation Error"),
 		},
 	});
 
@@ -103,9 +106,10 @@ export class BookRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
-			[200]: this.successResponse(errorResponse, "Book deleted successfully"),
-			[400]: this.errorResponse(errorResponse, "Book ID is required"),
-			[404]: this.errorResponse(errorResponse, "Book not found"),
+			200: this.successResponse(z.null(), "Book deleted successfully"),
+			401: this.errorResponse("Unauthorized"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("Book not found"),
 		},
 	});
 
@@ -120,9 +124,9 @@ export class BookRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
-			[200]: this.successResponse(errorResponse, "Book restored successfully"),
-			[400]: this.errorResponse(errorResponse, "Book ID is required"),
-			[404]: this.errorResponse(errorResponse, "Book not found"),
+			200: this.successResponse(errorResponse, "Book restored successfully"),
+			400: this.errorResponse("Book ID is required"),
+			404: this.errorResponse("Book not found"),
 		},
 	});
 
@@ -137,12 +141,12 @@ export class BookRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				errorResponse,
 				"Book hard deleted successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Book ID is required"),
-			[404]: this.errorResponse(errorResponse, "Book not found"),
+			400: this.errorResponse("Book ID is required"),
+			404: this.errorResponse("Book not found"),
 		},
 	});
 }

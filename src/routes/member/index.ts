@@ -6,7 +6,7 @@ const routes = new MemberRoutes();
 const handlers = new MemberHandler();
 
 const router = createRouter()
-    .openapi(routes.getProfile, handlers.getProfile)
-    .openapi(routes.updateProfile, handlers.updateProfile);
+	.openapi(routes.getProfile, handlers.getProfile)
+	.openapi(routes.updateProfile, handlers.updateProfile);
 
 export default router;

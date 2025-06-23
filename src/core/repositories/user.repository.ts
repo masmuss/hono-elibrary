@@ -6,6 +6,7 @@ import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Register } from "../types/auth";
 import type { User, UserInsert, UserUpdate } from "../types/user";
 import type { Filter } from "./types";
+import { APIError } from "../helpers/api-error";
 
 export class UserRepository extends SoftDeleteMixin {
 	constructor() {
@@ -25,16 +26,32 @@ export class UserRepository extends SoftDeleteMixin {
 		return user ?? null;
 	}
 
-	async register(data: Register): Promise<{ data: Register } | null> {
+	async register(
+		data: Register,
+	): Promise<{ data: Omit<User, "password" | "salt"> }> {
 		const isExists = await this.isUserExists(data.username, data.email);
+		if (isExists) {
+			throw new APIError(
+				409,
+				"User with same username or email already exists",
+				"USER_ALREADY_EXISTS",
+			);
+		}
+
 		const role = await this.db.query.roles.findFirst({
 			where: eq(roles.name, UserRole.MEMBER),
 		});
 
-		if (isExists || !role) return null;
+		if (!role) {
+			throw new APIError(
+				500,
+				"Default role for registration not configured",
+				"DEFAULT_ROLE_MISSING",
+			);
+		}
 
 		const salt = randomUUIDv7();
-		const user = await this.db
+		const [user] = await this.db
 			.insert(users)
 			.values({
 				...data,
@@ -44,16 +61,11 @@ export class UserRepository extends SoftDeleteMixin {
 			})
 			.returning();
 
-		return {
-			data: {
-				name: user[0].name,
-				username: user[0].username,
-				email: user[0].email,
-			},
-		} as { data: Register };
+		const { password, salt: removedSalt, ...restOfUser } = user;
+		return { data: restOfUser };
 	}
 
-	async login(username: string, password: string): Promise<User | null> {
+	async login(username: string, password_param: string): Promise<User> {
 		const user = await this.db.query.users.findFirst({
 			where: eq(users.username, username),
 			with: {
@@ -61,14 +73,26 @@ export class UserRepository extends SoftDeleteMixin {
 			},
 		});
 
-		if (!user) return null;
+		if (!user) {
+			throw new APIError(
+				401,
+				"Invalid username or password",
+				"INVALID_CREDENTIALS",
+			);
+		}
 
 		const isValid = await Bun.password.verify(
-			password + user.salt,
+			password_param + user.salt,
 			user.password,
 		);
 
-		if (!isValid) return null;
+		if (!isValid) {
+			throw new APIError(
+				401,
+				"Invalid username or password",
+				"INVALID_CREDENTIALS",
+			);
+		}
 
 		return user;
 	}
@@ -95,10 +119,16 @@ export class UserRepository extends SoftDeleteMixin {
 		);
 	}
 
-	async createUserByAdmin(data: UserInsert) {
+	async createUserByAdmin(
+		data: UserInsert,
+	): Promise<{ data: Omit<User, "password" | "salt"> }> {
 		const isExists = await this.isUserExists(data.username, data.email);
 		if (isExists) {
-			throw new Error("User with same username or email already exists");
+			throw new APIError(
+				400,
+				"User with same username or email already exists",
+				"USER_ALREADY_EXISTS",
+			);
 		}
 
 		const salt = randomUUIDv7();
@@ -109,40 +139,13 @@ export class UserRepository extends SoftDeleteMixin {
 				password: await Bun.password.hash(data.password + salt),
 				salt,
 			})
-			.returning({
-				id: users.id,
-				name: users.name,
-				username: users.username,
-				email: users.email,
-			});
+			.returning();
 
-		return { data: newUser };
+		const { password, salt: removedSalt, ...restOfUser } = newUser;
+		return { data: restOfUser };
 	}
 
-	async byId(id: string): Promise<{ data: any } | null> {
-		const user = await this.db.query.users.findFirst({
-			where: eq(users.id, id),
-			with: {
-				role: {
-					columns: {
-						name: true,
-					},
-				},
-			},
-			columns: {
-				password: false,
-				salt: false,
-			},
-		});
-
-		if (!user) return null;
-		return { data: user };
-	}
-
-	async updateUser(
-		id: string,
-		data: UserUpdate,
-	): Promise<{ data: User } | null> {
+	async updateUser(id: string, data: UserUpdate): Promise<{ data: User }> {
 		if (data.password) {
 			const salt = randomUUIDv7();
 			const hashedPassword = await Bun.password.hash(data.password + salt);
@@ -156,8 +159,36 @@ export class UserRepository extends SoftDeleteMixin {
 			.where(eq(users.id, id))
 			.returning();
 
-		if (!updatedUser) return null;
+		if (!updatedUser) {
+			throw new APIError(404, "User not found to update", "USER_NOT_FOUND");
+		}
 
 		return { data: updatedUser };
+	}
+
+	async byId(id: string): Promise<{ data: any }> {
+		const user = await this.db.query.users.findFirst({
+			where: eq(users.id, id),
+			with: { role: { columns: { name: true } } },
+			columns: { password: false, salt: false },
+		});
+
+		if (!user) {
+			throw new APIError(404, "User not found", "USER_NOT_FOUND");
+		}
+		return { data: user };
+	}
+
+	async softDelete(id: string): Promise<{ data: User }> {
+		const [deletedUser] = await this.db
+			.update(users)
+			.set({ deletedAt: new Date() })
+			.where(eq(users.id, id))
+			.returning();
+
+		if (!deletedUser) {
+			throw new APIError(404, "User not found to delete", "USER_NOT_FOUND");
+		}
+		return { data: deletedUser };
 	}
 }

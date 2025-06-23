@@ -16,8 +16,11 @@ export type ApiPaginatedResponse<T = any> = {
 };
 
 export type ApiErrorResponse<T = any> = {
-    message: string;
-    data: null;
-    error?: string;
-    errors: ZodIssue[];
+    success: false;
+    error: {
+        code: string;
+        message: string;
+        details?: Record<string, any>;
+    },
+    message?: string;
 };

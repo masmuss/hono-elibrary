@@ -135,7 +135,9 @@ describe("Category Endpoints", () => {
                 headers: { Authorization: `Bearer ${librarianToken}` },
             });
 
-            expect(res.status).toBe(500);
+            expect(res.status).toBe(400);
+            const body = await res.json();
+            expect(body.error.code).toBe("CATEGORY_IN_USE");
         });
     });
 });

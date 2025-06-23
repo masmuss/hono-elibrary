@@ -5,7 +5,6 @@ import {
 	paginationQuerySchema,
 	searchQuerySchema,
 } from "@/core/helpers/schemas";
-import { errorResponse } from "@/core/schemas/errors.schema";
 import {
 	getAllLoansSuccessResponse,
 	getLoanSuccessResponse,
@@ -32,11 +31,11 @@ export class LoanRoutes extends BaseRoutes {
 			authorizeRole([UserRole.ADMIN, UserRole.LIBRARIAN]),
 		],
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				getAllLoansSuccessResponse,
 				"Loans retrieved successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Invalid request body"),
+			400: this.errorResponse("Invalid request body"),
 		},
 	});
 
@@ -55,9 +54,9 @@ export class LoanRoutes extends BaseRoutes {
 				getAllLoansSuccessResponse,
 				"User's loans retrieved successfully",
 			),
-			401: this.errorResponse(errorResponse, "Unauthorized"),
-			404: this.errorResponse(errorResponse, "Member profile not found"),
-			500: this.errorResponse(errorResponse, "Internal Server Error"),
+			401: this.errorResponse("Unauthorized"),
+			404: this.errorResponse("Member profile not found"),
+			500: this.errorResponse("Internal Server Error"),
 		},
 	});
 
@@ -75,11 +74,16 @@ export class LoanRoutes extends BaseRoutes {
 			authorizeRole([UserRole.MEMBER, UserRole.LIBRARIAN]),
 		],
 		responses: {
-			[201]: this.successResponse(
+			201: this.successResponse(
 				getLoanSuccessResponse,
 				"Loan created successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Invalid request body"),
+			400: this.errorResponse(
+				"Bad Request (e.g., book out of stock, active loan exists)",
+			),
+			401: this.errorResponse("Unauthorized"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("Book or Member not found"),
 		},
 	});
 
@@ -94,12 +98,14 @@ export class LoanRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				getLoanSuccessResponse,
 				"Loan approved successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Invalid request body"),
-			[404]: this.errorResponse(errorResponse, "Loan not found"),
+			400: this.errorResponse("Bad Request (e.g., loan status is not pending)"),
+			401: this.errorResponse("Unauthorized"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("Loan not found"),
 		},
 	});
 
@@ -114,12 +120,12 @@ export class LoanRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				getLoanSuccessResponse,
 				"Loan rejected successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Invalid request body"),
-			[404]: this.errorResponse(errorResponse, "Loan not found"),
+			400: this.errorResponse("Invalid request body"),
+			404: this.errorResponse("Loan not found"),
 		},
 	});
 
@@ -137,12 +143,12 @@ export class LoanRoutes extends BaseRoutes {
 			authorizeRole([UserRole.MEMBER, UserRole.LIBRARIAN]),
 		],
 		responses: {
-			[200]: this.successResponse(
+			200: this.successResponse(
 				getLoanSuccessResponse,
 				"Loan returned successfully",
 			),
-			[400]: this.errorResponse(errorResponse, "Invalid request body"),
-			[404]: this.errorResponse(errorResponse, "Loan not found"),
+			400: this.errorResponse("Invalid request body"),
+			404: this.errorResponse("Loan not found"),
 		},
 	});
 }

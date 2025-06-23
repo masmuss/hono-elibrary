@@ -15,91 +15,48 @@ export class AdminUserHandler extends BaseHandler {
 	}
 
 	getAllUsers: AppRouteHandler<AdminGetAllUsers> = async (c) => {
-		try {
-			const filter = c.req.valid("query");
-			const result = await this.repository.getAllUsers(filter);
-			return c.json(
-				this.responseBuilder(result, "Users retrieved successfully"),
-			);
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to retrieve users", error as Error),
-				500,
-			);
-		}
+		const filter = c.req.valid("query");
+		const result = await this.repository.getAllUsers(filter);
+		return c.json(
+			this.buildSuccessResponse(result, "Users retrieved successfully"),
+			200,
+		);
 	};
 
 	createUser: AppRouteHandler<AdminCreateUser> = async (c) => {
-		try {
-			const body = c.req.valid("json");
-			const result = await this.repository.createUserByAdmin(body);
-			return c.json(
-				this.responseBuilder(result, "User created successfully by admin"),
-				201,
-			);
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to create user", error as Error),
-				400,
-			);
-		}
+		const body = c.req.valid("json");
+		const result = await this.repository.createUserByAdmin(body);
+		return c.json(
+			this.buildSuccessResponse(result, "User created successfully by admin"),
+			201,
+		);
 	};
 
 	getUserById: AppRouteHandler<AdminGetUserById> = async (c) => {
-		try {
-			const { id } = c.req.valid("param");
-			const result = await this.repository.byId(id);
-
-			if (!result) {
-				return c.json(this.responseBuilder(null, "User not found"), 404);
-			}
-
-			return c.json(
-				this.responseBuilder(result, "User retrieved successfully"),
-			);
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to retrieve user", error as Error),
-				500,
-			);
-		}
+		const { id } = c.req.valid("param");
+		const result = await this.repository.byId(id);
+		return c.json(
+			this.buildSuccessResponse(result, "User retrieved successfully"),
+			200,
+		);
 	};
 
 	updateUser: AppRouteHandler<AdminUpdateUser> = async (c) => {
-		try {
-			const { id } = c.req.valid("param");
-			const body = c.req.valid("json");
-
-			const result = await this.repository.updateUser(id, body);
-
-			if (!result) {
-				return c.json(this.responseBuilder(null, "User not found"), 404);
-			}
-
-			return c.json(this.responseBuilder(result, "User updated successfully"));
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to update user", error as Error),
-				500,
-			);
-		}
+		const { id } = c.req.valid("param");
+		const body = c.req.valid("json");
+		const result = await this.repository.updateUser(id, body);
+		return c.json(
+			this.buildSuccessResponse(result, "User updated successfully"),
+			200,
+		);
 	};
 
 	deleteUser: AppRouteHandler<AdminDeleteUser> = async (c) => {
-		try {
-			const { id } = c.req.valid("param");
-			const result = await this.repository.softDelete(id);
-
-			if (!result) {
-				return c.json(this.responseBuilder(null, "User not found"), 404);
-			}
-
-			return c.json(this.responseBuilder(null, "User deleted successfully"));
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to delete user", error as Error),
-				500,
-			);
-		}
+		const { id } = c.req.valid("param");
+		await this.repository.softDelete(id);
+		return c.json(
+			this.buildSuccessResponse(null, "User deleted successfully"),
+			200,
+		);
 	};
 }

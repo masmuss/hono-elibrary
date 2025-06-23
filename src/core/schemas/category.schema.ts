@@ -11,6 +11,4 @@ export const getAllCategoriesSuccessResponse = z.object({
 	page: z.number(),
 });
 
-export const getCategorySuccessResponse = z.object({
-	data: selectCategorySchema,
-});
+export const getCategorySuccessResponse = selectCategorySchema;

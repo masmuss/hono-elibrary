@@ -3,6 +3,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Loan, LoanQueryResult } from "../types/loan";
 import type { Filter } from "./types";
+import { APIError } from "../helpers/api-error";
 
 export class LoanRepository extends SoftDeleteMixin {
 	constructor() {
@@ -162,7 +163,11 @@ export class LoanRepository extends SoftDeleteMixin {
 
 	async createLoan(memberId: string, bookId: number): Promise<LoanQueryResult> {
 		if (await this.hasActiveLoan(memberId, bookId)) {
-			throw new Error("Anggota sudah memiliki pinjaman aktif untuk buku ini.");
+			throw new APIError(
+				400,
+				"Member is already borrowing this book.",
+				"LOAN_ACTIVE_EXISTS",
+			);
 		}
 
 		return await this.db.transaction(async (trx) => {
@@ -172,27 +177,37 @@ export class LoanRepository extends SoftDeleteMixin {
 			});
 
 			if (!book) {
-				throw new Error("Buku tidak ditemukan.");
+				throw new APIError(404, "Book not found.", "BOOK_NOT_FOUND");
 			}
 			if (book.availableCopies < 1) {
-				throw new Error("Stok buku habis. Silakan coba lagi nanti.");
+				throw new APIError(400, "Book is out of stock.", "BOOK_OUT_OF_STOCK");
 			}
+
+			await trx
+				.update(books)
+				.set({ availableCopies: sql`${books.availableCopies} - 1` })
+				.where(eq(books.id, bookId));
 
 			const [insertedLoan] = await trx
 				.insert(loans)
-				.values({
-					memberId,
-					bookId,
-				})
+				.values({ memberId, bookId })
 				.returning({ id: loans.id });
 
 			if (!insertedLoan || !insertedLoan.id) {
-				throw new Error("Gagal membuat data pinjaman.");
+				throw new APIError(
+					500,
+					"Failed to create loan.",
+					"LOAN_CREATION_FAILED",
+				);
 			}
 
 			const newLoanDetails = await this.getLoanDetails(insertedLoan.id, trx);
 			if (!newLoanDetails) {
-				throw new Error("Gagal mengambil detail pinjaman setelah pembuatan.");
+				throw new APIError(
+					500,
+					"Failed to fetch loan details after creation.",
+					"LOAN_FETCH_FAILED",
+				);
 			}
 			return newLoanDetails;
 		});
@@ -206,14 +221,16 @@ export class LoanRepository extends SoftDeleteMixin {
 			where: eq(loans.id, loanId),
 		});
 		if (!loan) {
-			throw new Error("Peminjaman tidak ditemukan.");
+			throw new Error("Loan not found.");
 		}
 		if (loan.returnedAt) {
-			throw new Error("Peminjaman sudah dikembalikan.");
+			throw new Error("Loan has already been returned.");
 		}
 
 		if (loan.status === "rejected" || loan.status === "approved") {
-			throw new Error(`Peminjaman sudah dalam status: ${loan.status}.`);
+			throw new Error(
+				`Loan cannot be modified because its status is: ${loan.status}.`,
+			);
 		}
 		return loan;
 	}
@@ -223,23 +240,16 @@ export class LoanRepository extends SoftDeleteMixin {
 		librarianId: string,
 	): Promise<{ data: LoanQueryResult }> {
 		return await this.db.transaction(async (trx) => {
-			const loan = await this.findLoanForModification(loanId, trx);
-
-			const book = await trx.query.books.findFirst({
-				where: eq(books.id, loan.bookId),
-				columns: { availableCopies: true, id: true },
+			const loan = await trx.query.loans.findFirst({
+				where: eq(loans.id, loanId),
 			});
-
-			if (!book) {
-				throw new Error("Buku terkait peminjaman tidak ditemukan.");
-			}
-
-			if (book.availableCopies < 1) {
-				await trx
-					.update(books)
-					.set({ availableCopies: sql`${books.availableCopies} - 1` })
-					.where(eq(books.id, loan.bookId));
-			}
+			if (!loan) throw new APIError(404, "Loan not found.", "LOAN_NOT_FOUND");
+			if (loan.status !== "pending")
+				throw new APIError(
+					400,
+					`Loan cannot be approved because its status is: ${loan.status}.`,
+					"LOAN_STATUS_INVALID",
+				);
 
 			await trx
 				.update(loans)
@@ -252,9 +262,9 @@ export class LoanRepository extends SoftDeleteMixin {
 				.where(eq(loans.id, loanId));
 
 			const updatedLoanDetails = await this.getLoanDetails(loanId, trx);
-			if (!updatedLoanDetails) {
-				throw new Error("Gagal mengambil detail pinjaman setelah persetujuan.");
-			}
+			if (!updatedLoanDetails)
+				throw new APIError(500, "Failed to fetch loan details after approval.");
+
 			return { data: updatedLoanDetails };
 		});
 	}
@@ -288,7 +298,7 @@ export class LoanRepository extends SoftDeleteMixin {
 
 			const updatedLoanDetails = await this.getLoanDetails(loanId, trx);
 			if (!updatedLoanDetails) {
-				throw new Error("Gagal mengambil detail pinjaman setelah penolakan.");
+				throw new Error("Failed to fetch loan details after rejection.");
 			}
 			return { data: updatedLoanDetails };
 		});
@@ -301,40 +311,36 @@ export class LoanRepository extends SoftDeleteMixin {
 				columns: { id: true, returnedAt: true, bookId: true, status: true },
 			});
 
-			if (!loan) {
-				throw new Error("Peminjaman tidak ditemukan.");
-			}
-			if (loan.returnedAt) {
-				throw new Error("Peminjaman sudah dikembalikan sebelumnya.");
-			}
-
-			if (loan.status !== "approved") {
-				throw new Error(
-					`Peminjaman tidak dapat dikembalikan karena statusnya: ${loan.status}.`,
+			if (!loan) throw new APIError(404, "Loan not found.", "LOAN_NOT_FOUND");
+			if (loan.returnedAt)
+				throw new APIError(
+					400,
+					"Loan has already been returned.",
+					"LOAN_ALREADY_RETURNED",
 				);
-			}
+			if (loan.status !== "approved")
+				throw new APIError(
+					400,
+					`Loan cannot be returned because its status is: ${loan.status}.`,
+					"LOAN_STATUS_INVALID",
+				);
 
 			await trx
 				.update(books)
 				.set({ availableCopies: sql`${books.availableCopies} + 1` })
 				.where(eq(books.id, loan.bookId));
 
-			const returnedDate = new Date().toISOString();
 			await trx
 				.update(loans)
 				.set({
-					returnedAt: returnedDate,
+					returnedAt: new Date().toLocaleDateString(),
 					status: "returned",
 				})
 				.where(eq(loans.id, loanId));
 
 			const updatedLoanDetails = await this.getLoanDetails(loanId, trx);
-
-			if (!updatedLoanDetails) {
-				throw new Error(
-					"Gagal mengambil detail pinjaman setelah pengembalian.",
-				);
-			}
+			if (!updatedLoanDetails)
+				throw new APIError(500, "Failed to fetch loan details after return.");
 
 			return updatedLoanDetails;
 		});

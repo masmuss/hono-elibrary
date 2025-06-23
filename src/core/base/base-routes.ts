@@ -1,18 +1,17 @@
 import jsonContent from "@/core/helpers/json-content";
-import { z } from "@hono/zod-openapi";
+import {
+	baseErrorResponseSchema,
+	createSuccessResponseSchema,
+} from "../schemas/base.schema";
 import type { ZodSchema } from "zod";
 
 export class BaseRoutes {
-	protected errorResponse = (schema: ZodSchema, description: string) =>
-		jsonContent(schema, description);
+	protected errorResponse(description: string) {
+		return jsonContent(baseErrorResponseSchema, description);
+	}
 
-	protected successResponse = (schema: ZodSchema, description: string) =>
-		jsonContent(
-			z.object({
-				schema,
-				message: z.string(),
-				error: z.nullable(z.string()),
-			}),
-			description,
-		);
+	protected successResponse(schema: ZodSchema, description: string) {
+		const wrappedSchema = createSuccessResponseSchema(schema);
+		return jsonContent(wrappedSchema, description);
+	}
 }

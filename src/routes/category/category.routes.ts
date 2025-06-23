@@ -7,7 +7,6 @@ import { authHeadersSchema } from "@/core/validations/auth.validation";
 import { authMiddleware } from "@/middlewares/auth";
 import { authorizeRole } from "@/middlewares/authorization";
 import { UserRole } from "@/lib/constants/enums/user-roles.enum";
-import { errorResponse } from "@/core/schemas/errors.schema";
 import {
 	getAllCategoriesSuccessResponse,
 	getCategorySuccessResponse,
@@ -34,7 +33,7 @@ export class CategoryRoutes extends BaseRoutes {
 		request: { params: idParamSchema },
 		responses: {
 			200: this.successResponse(getCategorySuccessResponse, "OK"),
-			404: this.errorResponse(errorResponse, "Not Found"),
+			404: this.errorResponse("Not Found"),
 		},
 	});
 
@@ -50,11 +49,8 @@ export class CategoryRoutes extends BaseRoutes {
 		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
 		responses: {
 			201: this.successResponse(getCategorySuccessResponse, "Created"),
-			400: this.errorResponse(
-				errorResponse,
-				"Bad Request (e.g., validation error)",
-			),
-			403: this.errorResponse(errorResponse, "Forbidden"),
+			400: this.errorResponse("Bad Request (e.g., validation error)"),
+			403: this.errorResponse("Forbidden"),
 		},
 	});
 
@@ -71,12 +67,9 @@ export class CategoryRoutes extends BaseRoutes {
 		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
 		responses: {
 			200: this.successResponse(getCategorySuccessResponse, "OK"),
-			403: this.errorResponse(errorResponse, "Forbidden"),
-			400: this.errorResponse(
-				errorResponse,
-				"Bad Request (e.g., validation error)",
-			),
-			404: this.errorResponse(errorResponse, "Not Found"),
+			403: this.errorResponse("Forbidden"),
+			400: this.errorResponse("Bad Request (e.g., validation error)"),
+			404: this.errorResponse("Not Found"),
 		},
 	});
 
@@ -92,13 +85,10 @@ export class CategoryRoutes extends BaseRoutes {
 		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
 		responses: {
 			200: this.successResponse(z.null(), "Deleted"),
-			400: this.errorResponse(
-				errorResponse,
-				"Bad Request (e.g., category in use)",
-			),
-			500: this.errorResponse(errorResponse, "Internal Server Error"),
-			403: this.errorResponse(errorResponse, "Forbidden"),
-			404: this.errorResponse(errorResponse, "Not Found"),
+			400: this.errorResponse("Bad Request (e.g., category in use)"),
+			500: this.errorResponse("Internal Server Error"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("Not Found"),
 		},
 	});
 }

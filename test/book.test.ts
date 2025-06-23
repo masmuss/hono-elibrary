@@ -147,7 +147,8 @@ describe("Book Endpoints", () => {
             const body = await res.json() as ApiErrorResponse<Book>;
 
             expect(res.status).toBe(422);
-            expect(body.errors && body.errors[0] && body.errors[0].path[0]).toInclude("title");
+            expect(body.error.code).toInclude("VALIDATION_ERROR");
+            expect(body.error.message).toBe("The provided data is invalid.");
         });
     });
 
@@ -267,7 +268,7 @@ describe("Book Endpoints", () => {
 
             expect(res.status).toBe(200);
             const body = await res.json() as ApiSuccessResponse;
-            expect(body.message).toBe("Book permanently deleted successfully");
+            expect(body.message).toBe("Book permanently deleted");
 
             const getRes = await app.request(`/api/books/${bookToHardDelete.id}`);
             expect(getRes.status).toBe(404);

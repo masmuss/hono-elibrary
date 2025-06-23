@@ -5,6 +5,7 @@ import type { PaginatedData } from "../base/types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Book, BookInsert, BookUpdate } from "../types/book";
 import type { Filter } from "./types";
+import { APIError } from "../helpers/api-error";
 
 export class BookRepository extends SoftDeleteMixin implements Repository {
 	constructor() {
@@ -52,7 +53,7 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		);
 	}
 
-	async byId(id: number): Promise<{ data: Book } | null> {
+	async byId(id: number): Promise<{ data: Book }> {
 		const query = await this.db.query.books.findFirst({
 			where: and(eq(books.id, id), isNull(books.deletedAt)),
 			with: {
@@ -64,24 +65,30 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 			},
 		});
 
-		if (!query) return null;
+		if (!query) {
+			throw new APIError(404, "Book not found", "BOOK_NOT_FOUND");
+		}
 		return { data: query };
 	}
 
-	async create(book: BookInsert): Promise<{ data: Book } | null> {
-		const query = await this.db.insert(books).values(book).returning();
-		if (!query) return null;
-		return { data: query[0] };
+	async create(book: BookInsert): Promise<{ data: Book }> {
+		const [query] = await this.db.insert(books).values(book).returning();
+		if (!query) {
+			throw new APIError(500, "Failed to create book record");
+		}
+		return { data: query };
 	}
 
-	async update(id: number, book: BookUpdate): Promise<{ data: Book } | null> {
-		const query = await this.db
+	async update(id: number, book: BookUpdate): Promise<{ data: Book }> {
+		const [query] = await this.db
 			.update(books)
 			.set(book)
 			.where(and(eq(books.id, id), isNull(books.deletedAt)))
 			.returning();
 
-		if (!query) return null;
-		return { data: query[0] };
+		if (!query) {
+			throw new APIError(404, "Book not found to update", "BOOK_NOT_FOUND");
+		}
+		return { data: query };
 	}
 }

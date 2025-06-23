@@ -6,7 +6,6 @@ import {
 	getAllUsersSuccessResponse,
 	userResponseSchema,
 } from "@/core/schemas/admin.user.schema";
-import { errorResponse } from "@/core/schemas/errors.schema";
 import {
 	createUserAsAdminSchema,
 	updateUserAsAdminSchema,
@@ -33,8 +32,8 @@ export class AdminUserRoutes extends BaseRoutes {
 				getAllUsersSuccessResponse,
 				"Users retrieved successfully",
 			),
-			403: this.errorResponse(errorResponse, "Forbidden"),
-			500: this.errorResponse(errorResponse, "Internal Server Error"),
+			403: this.errorResponse("Forbidden"),
+			500: this.errorResponse("Internal Server Error"),
 		},
 	});
 
@@ -53,11 +52,8 @@ export class AdminUserRoutes extends BaseRoutes {
 				userResponseSchema.omit({ role: true, createdAt: true }),
 				"User created successfully",
 			),
-			400: this.errorResponse(
-				errorResponse,
-				"User already exists or invalid data",
-			),
-			403: this.errorResponse(errorResponse, "Forbidden"),
+			400: this.errorResponse("User already exists or invalid data"),
+			403: this.errorResponse("Forbidden"),
 		},
 	});
 
@@ -76,9 +72,9 @@ export class AdminUserRoutes extends BaseRoutes {
 				userResponseSchema,
 				"User retrieved successfully",
 			),
-			403: this.errorResponse(errorResponse, "Forbidden"),
-			404: this.errorResponse(errorResponse, "User not found"),
-			500: this.errorResponse(errorResponse, "Internal Server Error"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("User not found"),
+			500: this.errorResponse("Internal Server Error"),
 		},
 	});
 
@@ -98,10 +94,10 @@ export class AdminUserRoutes extends BaseRoutes {
 				userResponseSchema,
 				"User updated successfully",
 			),
-			400: this.errorResponse(errorResponse, "Invalid data provided"),
-			403: this.errorResponse(errorResponse, "Forbidden"),
-			404: this.errorResponse(errorResponse, "User not found"),
-			500: this.errorResponse(errorResponse, "Internal Server Error"),
+			400: this.errorResponse("Invalid data provided"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("User not found"),
+			500: this.errorResponse("Internal Server Error"),
 		},
 	});
 
@@ -117,9 +113,9 @@ export class AdminUserRoutes extends BaseRoutes {
 		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
 		responses: {
 			200: this.successResponse(z.null(), "User deleted successfully"),
-			403: this.errorResponse(errorResponse, "Forbidden"),
-			404: this.errorResponse(errorResponse, "User not found"),
-			500: this.errorResponse(errorResponse, "Internal Server Error"),
+			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("User not found"),
+			500: this.errorResponse("Internal Server Error"),
 		},
 	});
 }

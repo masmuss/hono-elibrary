@@ -7,6 +7,8 @@ import { describe, beforeAll, it, expect, beforeEach } from 'bun:test'
 import app from '@/index';
 import { createTestUser } from './utils/data-helpers';
 import { generateAuthToken } from './utils/auth-helpers';
+import { ApiErrorResponse, ApiSuccessResponse } from './types';
+import { User } from '@/core/types/user';
 
 
 describe('Auth Endpoints', () => {
@@ -37,18 +39,12 @@ describe('Auth Endpoints', () => {
                     body: JSON.stringify(userData),
                 })
 
-            const result = await res.json();
+            const body = await res.json() as ApiSuccessResponse<User>;
 
             expect(res.status).toBe(201);
-            expect(result).toEqual({
-                message: 'User registered successfully',
-                data: {
-                    name: userData.name,
-                    username: userData.username,
-                    email: userData.email,
-                },
-                error: null,
-            });
+            expect(body.data.name).toBe(userData.name);
+            expect(body.data.username).toBe(userData.username);
+            expect(body.data.email).toBe(userData.email);
         });
 
         it('should return 409 if username already exists', async () => {
@@ -70,12 +66,12 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(409);
-            expect(await res.json()).toEqual({
-                message: 'User with same username or email already exists',
-                data: null,
-                error: null
-            })
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('USER_ALREADY_EXISTS');
+            expect(body.error.message).toBe('User with same username or email already exists');
         });
 
         it('should return 409 if email already exists', async () => {
@@ -97,12 +93,12 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(409);
-            expect(await res.json()).toEqual({
-                message: 'User with same username or email already exists',
-                data: null,
-                error: null
-            })
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('USER_ALREADY_EXISTS');
+            expect(body.error.message).toBe('User with same username or email already exists');
         });
 
         it('should return 422 for invalid request body (validation error)', async () => {
@@ -122,11 +118,12 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(422);
-            expect(await res.json()).toEqual({
-                success: false,
-                errors: expect.any(Array),
-            })
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('VALIDATION_ERROR');
+            expect(body.error.message).toEqual('The provided data is invalid.');
         });
     });
 
@@ -155,17 +152,13 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiSuccessResponse;
+
             expect(res.status).toBe(200);
-            expect(await res.json()).toEqual({
-                message: 'Login successful',
-                error: null,
-                data: {
-                    id: testUser.id,
-                    name: testUser.name,
-                    username: testUser.username,
-                    token: expect.any(String),
-                },
-            })
+            expect(body.data).toHaveProperty('id', testUser.id);
+            expect(body.data).toHaveProperty('username', testUser.username);
+            expect(body.data).toHaveProperty('name', testUser.name);
+            expect(body.data).toHaveProperty('token');
         });
 
         it('should return 401 with error message for invalid username', async () => {
@@ -183,12 +176,12 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(401);
-            expect(await res.json()).toEqual({
-                message: 'Invalid username or password',
-                data: null,
-                error: null,
-            })
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('INVALID_CREDENTIALS');
+            expect(body.error.message).toBe('Invalid username or password');
         });
 
         it('should return 401 with error message for invalid password', async () => {
@@ -206,8 +199,12 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(401);
-            expect(await res.json()).toHaveProperty('message', 'Invalid username or password');
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('INVALID_CREDENTIALS');
+            expect(body.error.message).toBe('Invalid username or password');
         });
     });
 
@@ -216,7 +213,7 @@ describe('Auth Endpoints', () => {
         let testToken: string;
 
         beforeEach(async () => {
-            const { user, password } = await createTestUser(UserRole.MEMBER);
+            const { user } = await createTestUser(UserRole.MEMBER);
             testUser = user;
             testToken = await generateAuthToken({ id: user.id, username: user.username, name: user.name, role: UserRole.MEMBER });
         });
@@ -232,17 +229,12 @@ describe('Auth Endpoints', () => {
                 }
                 )
 
+            const body = await res.json() as ApiSuccessResponse<User>;
+
             expect(res.status).toBe(200);
-            expect(await res.json()).toEqual({
-                message: "User profile retrieved successfully",
-                error: null,
-                data: {
-                    id: testUser.id,
-                    username: testUser.username,
-                    name: testUser.name,
-                    role: UserRole.MEMBER,
-                }
-            })
+            expect(body.data).toHaveProperty('id', testUser.id);
+            expect(body.data).toHaveProperty('username', testUser.username);
+            expect(body.data).toHaveProperty('name', testUser.name);
         });
 
         it('should return 401 for missing token', async () => {
@@ -254,7 +246,10 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(401);
+            expect(body.message).toBe('Unauthorized');
         });
 
         it('should return 401 for invalid token', async () => {
@@ -267,7 +262,10 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(401);
+            expect(body.message).toBe('Invalid or expired token');
         });
     });
 
@@ -289,12 +287,11 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiSuccessResponse<null>;
+
             expect(res.status).toBe(200);
-            expect(await res.json()).toEqual({
-                message: 'Logout successful',
-                error: null,
-                data: null,
-            })
+            expect(body.message).toEqual('Logout successful');
+            expect(body.data).toBeNull();
         });
 
         it('should return 401 for missing token', async () => {
@@ -306,10 +303,10 @@ describe('Auth Endpoints', () => {
                     },
                 })
 
+            const body = await res.json() as ApiErrorResponse;
+
             expect(res.status).toBe(401);
-            expect(await res.json()).toEqual({
-                message: 'Unauthorized',
-            });
+            expect(body.message).toEqual('Unauthorized');
         });
     });
 });

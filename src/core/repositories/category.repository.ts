@@ -1,9 +1,10 @@
 import type { PaginatedData } from "@/core/base/types";
-import { categories } from "@/db/schema";
+import { books, categories } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { Filter } from "./types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
+import { APIError } from "../helpers/api-error";
 
 export type Category = InferSelectModel<typeof categories>;
 export type CategoryInsert = InferInsertModel<typeof categories>;
@@ -45,20 +46,15 @@ export class CategoryRepository extends SoftDeleteMixin {
 		);
 	}
 
-	async byId(id: number): Promise<{ data: Category } | null> {
-		const query = await this.db.query.categories.findFirst({
-			where: and(eq(categories.id, id), isNull(categories.deletedAt)),
-			columns: {
-				id: true,
-				name: true,
-				createdAt: true,
-				updatedAt: true,
-				deletedAt: true,
-			},
-		});
-
-		if (!query) return null;
-		return { data: query };
+	async byId(id: number): Promise<{ data: Category }> {
+		const [result] = (await this.db
+			.select()
+			.from(this.table)
+			.where(eq(categories.id, id))) as Category[];
+		if (!result) {
+			throw new APIError(404, "Category not found", "CATEGORY_NOT_FOUND");
+		}
+		return { data: result };
 	}
 
 	async create(data: CategoryInsert): Promise<{ data: Category } | null> {
@@ -66,7 +62,13 @@ export class CategoryRepository extends SoftDeleteMixin {
 			.insert(this.table)
 			.values(data)
 			.returning()) as Category[];
-		if (!query || !query[0]) return null;
+		if (query.length === 0) {
+			throw new APIError(
+				400,
+				"Failed to create category",
+				"CATEGORY_CREATION_FAILED",
+			);
+		}
 
 		return { data: query[0] };
 	}
@@ -80,8 +82,31 @@ export class CategoryRepository extends SoftDeleteMixin {
 			.set(data)
 			.where(eq(categories.id, id))
 			.returning()) as Category[];
-		if (!result) return null;
+		if (!result) {
+			throw new APIError(404, "Category not found", "CATEGORY_NOT_FOUND");
+		}
 
+		return { data: result };
+	}
+
+	async hardDelete(id: number): Promise<{ data: Category }> {
+		const bookUsingCategory = await this.db.query.books.findFirst({
+			where: eq(books.categoryId, id),
+		});
+		if (bookUsingCategory) {
+			throw new APIError(
+				400,
+				"Cannot delete category: It is currently in use by one or more books.",
+				"CATEGORY_IN_USE",
+			);
+		}
+		const [result] = (await this.db
+			.delete(this.table)
+			.where(eq(categories.id, id))
+			.returning()) as Category[];
+		if (!result) {
+			throw new APIError(404, "Category not found", "CATEGORY_NOT_FOUND");
+		}
 		return { data: result };
 	}
 }

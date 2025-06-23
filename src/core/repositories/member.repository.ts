@@ -3,6 +3,7 @@ import db from "@/db";
 import { members, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { MemberProfileUpdate } from "../types/member";
+import { APIError } from "../helpers/api-error";
 
 export class MemberRepository extends BaseRepository {
 	constructor() {
@@ -15,6 +16,13 @@ export class MemberRepository extends BaseRepository {
 			.from(this.table)
 			.where(eq(members.userId, userId));
 
+		if (!member) {
+			throw new APIError(
+				404,
+				"Member profile not found for this user",
+				"MEMBER_PROFILE_NOT_FOUND",
+			);
+		}
 		return member;
 	}
 
@@ -38,6 +46,13 @@ export class MemberRepository extends BaseRepository {
 			},
 		});
 
+		if (!memberProfile) {
+			throw new APIError(
+				404,
+				"Member profile not found",
+				"MEMBER_PROFILE_NOT_FOUND",
+			);
+		}
 		return memberProfile;
 	}
 
@@ -62,9 +77,7 @@ export class MemberRepository extends BaseRepository {
 			}
 
 			const updatedProfile = await this.getProfileByUserId(userId, trx);
-			if (!updatedProfile) {
-				throw new Error("Failed to fetch updated profile.");
-			}
+
 			return { data: updatedProfile };
 		});
 	}

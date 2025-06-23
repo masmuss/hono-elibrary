@@ -5,7 +5,11 @@ const defaultHook: Hook<any, any, any, any> = (result, c) => {
 		return c.json(
 			{
 				success: result.success,
-				errors: result.error.issues,
+				error: {
+					code: "VALIDATION_ERROR",
+					message: "The provided data is invalid.",
+					details: result.error.flatten().fieldErrors,
+				},
 			},
 			422,
 		);

@@ -18,79 +18,45 @@ export class CategoryHandler extends BaseHandler {
 		const filter = c.req.valid("query");
 		const result = await this.repository.get(filter);
 		return c.json(
-			this.responseBuilder(result, "Categories retrieved successfully"),
+			this.buildSuccessResponse(result, "Categories retrieved successfully"),
+			200,
 		);
 	};
 
 	getCategoryById: AppRouteHandler<GetCategoryById> = async (c) => {
 		const { id } = c.req.valid("param");
 		const result = await this.repository.byId(id);
-		if (!result) {
-			return c.json(this.responseBuilder(null, "Category not found"), 404);
-		}
 		return c.json(
-			this.responseBuilder(result, "Category retrieved successfully"),
+			this.buildSuccessResponse(result, "Category retrieved successfully"),
+			200,
 		);
 	};
 
 	createCategory: AppRouteHandler<CreateCategory> = async (c) => {
-		try {
-			const body = c.req.valid("json");
-			const result = await this.repository.create(body);
-			return c.json(
-				this.responseBuilder(result, "Category created successfully"),
-				201,
-			);
-		} catch (error) {
-			return c.json(
-				this.responseBuilder(null, "Failed to create category", error as Error),
-				400,
-			);
-		}
+		const body = c.req.valid("json");
+		const result = await this.repository.create(body);
+		return c.json(
+			this.buildSuccessResponse(result, "Category created successfully"),
+			201,
+		);
 	};
 
 	updateCategory: AppRouteHandler<UpdateCategory> = async (c) => {
-		try {
-			const { id } = c.req.valid("param");
-			const body = c.req.valid("json");
-			const result = await this.repository.update(id, body);
-			if (!result) {
-				return c.json(this.responseBuilder(null, "Category not found"), 404);
-			}
-			return c.json(
-				this.responseBuilder(result, "Category updated successfully"),
-				200,
-			);
-		} catch (error) {
-			return c.json(
-				this.responseBuilder(null, "Failed to update category", error as Error),
-				400,
-			);
-		}
+		const { id } = c.req.valid("param");
+		const body = c.req.valid("json");
+		const result = await this.repository.update(id, body);
+		return c.json(
+			this.buildSuccessResponse(result, "Category updated successfully"),
+			200,
+		);
 	};
 
 	deleteCategory: AppRouteHandler<DeleteCategory> = async (c) => {
-		try {
-			const { id } = c.req.valid("param");
-			const result = await this.repository.hardDelete(id);
-			if (!result) {
-				return c.json(this.responseBuilder(null, "Category not found"), 404);
-			}
-			return c.json(
-				this.responseBuilder(null, "Category deleted successfully"),
-				200,
-			);
-		} catch (error) {
-			if ((error as Error).message.includes("in use")) {
-				return c.json(
-					this.responseBuilder(null, (error as Error).message, error as Error),
-					400,
-				);
-			}
-			return c.json(
-				this.responseBuilder(null, "Failed to delete category", error as Error),
-				500,
-			);
-		}
+		const { id } = c.req.valid("param");
+		await this.repository.hardDelete(id);
+		return c.json(
+			this.buildSuccessResponse(null, "Category deleted successfully"),
+			200,
+		);
 	};
 }

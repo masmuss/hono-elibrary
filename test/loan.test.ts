@@ -83,7 +83,9 @@ describe("Loan Endpoints", () => {
 
             expect(res.status).toBe(400);
             const body = await res.json() as ApiErrorResponse;
-            expect(body.error).toContain("sudah memiliki pinjaman aktif");
+            expect(body.success).toBeFalse();
+            expect(body.error.code).toBe("LOAN_ACTIVE_EXISTS");
+            expect(body.error.message).toContain("Member is already borrowing this book.");
         });
 
         it("should return 403 for an ADMIN trying to create a loan", async () => {
@@ -161,7 +163,10 @@ describe("Loan Endpoints", () => {
 
             expect(res.status).toBe(400);
             const body = await res.json() as ApiErrorResponse;
-            expect(body.error).toContain("sudah dalam status: approved");
+
+            expect(body.success).toBeFalse();
+            expect(body.error.code).toBe("LOAN_STATUS_INVALID");
+            expect(body.error.message).toContain("Loan cannot be approved because its status is: approved.");
         });
     });
 
@@ -174,8 +179,8 @@ describe("Loan Endpoints", () => {
                 method: "POST",
                 headers: { Authorization: `Bearer ${librarianToken}` },
             });
-            const body = await res.json() as ApiErrorResponse;
-            approvedLoan = body.data && !Array.isArray(body.data) && (body.data as any).loan ? (body.data as any).loan : body.data;
+            const body = await res.json() as ApiSuccessResponse;
+            approvedLoan = body.data;
         });
 
         it("should allow a MEMBER to return their loan", async () => {
@@ -199,7 +204,9 @@ describe("Loan Endpoints", () => {
 
             expect(res.status).toBe(400);
             const body = await res.json() as ApiErrorResponse;
-            expect(body.error).toContain("statusnya: pending");
+            expect(body.success).toBeFalse();
+            expect(body.error.code).toBe("LOAN_STATUS_INVALID");
+            expect(body.error.message).toContain("Loan cannot be returned because its status is: pending.");
         });
     });
 
