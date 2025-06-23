@@ -1,17 +1,8 @@
 import redisClient from "@/lib/redis";
-import { describe, it, expect, afterAll } from "bun:test";
+import { describe, it, expect } from "bun:test";
 
 describe("Redis Connection and Basic Operations", () => {
     const testKeys: string[] = [];
-
-    afterAll(async () => {
-        if (testKeys.length > 0) {
-            for (const testKey of testKeys) {
-                await redisClient.del(testKey);
-            }
-        }
-        redisClient.close();
-    });
 
     it("should connect to the Redis server and respond to PING", async () => {
         const reply = await redisClient.send("PING", ["Hello Redis!"]);
