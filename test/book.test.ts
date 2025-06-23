@@ -8,6 +8,7 @@ import {
 } from "test/utils/data-helpers";
 import { generateAuthToken } from "test/utils/auth-helpers";
 import type { Book } from "@/core/types/book";
+import type { ApiErrorResponse, ApiPaginatedResponse, ApiSuccessResponse } from "./types";
 
 type Body = {
     data: Book | Book[] | [] | null;
@@ -36,7 +37,7 @@ describe("Book Endpoints", () => {
     describe("GET /api/books", () => {
         it("should return a list of books", async () => {
             const res = await app.request("/api/books");
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse<Book[]>;
 
             expect(res.status).toBe(200);
             expect(body.data).toBeArray();
@@ -46,24 +47,24 @@ describe("Book Endpoints", () => {
 
         it("should handle pagination correctly", async () => {
             const res = await app.request("/api/books?page=1&pageSize=1");
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiPaginatedResponse<Book>;
 
             expect(res.status).toBe(200);
             expect(body.data).toBeArray()
+            expect(body.data.length).toBe(1);
+            expect(body.page).toBe(1);
         });
     });
 
     describe("GET /api/books/:id", () => {
         it("should return a single book for a valid ID", async () => {
             const res = await app.request(`/api/books/${testBook1.id}`);
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse<Book>;
 
             expect(res.status).toBe(200);
             expect(body.data).toBeObject();
-            if (body.data && !Array.isArray(body.data)) {
-                expect(body.data.id).toBe(testBook1.id);
-                expect(body.data?.title).toBe(testBook1.title);
-            }
+            expect(body.data.id).toBe(testBook1.id);
+            expect(body.data.title).toBe(testBook1.title);
         });
 
         it("should return 404 for a non-existent ID", async () => {
@@ -95,12 +96,17 @@ describe("Book Endpoints", () => {
                 body: JSON.stringify({ ...newBookData, categoryId: testCategory.id }),
             });
 
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse<Book>;
 
             expect(res.status).toBe(201);
-            if (body.data && !Array.isArray(body.data)) {
-                expect(body.data.title).toBe(newBookData.title);
-            }
+            expect(body.data.title).toBe(newBookData.title);
+            expect(body.data.author).toBe(newBookData.author);
+            expect(body.data.categoryId).toBe(testCategory.id);
+            expect(body.data.isbn).toBe(newBookData.isbn);
+            expect(body.data.totalCopies).toBe(newBookData.totalCopies);
+            expect(body.data.availableCopies).toBe(newBookData.availableCopies);
+            expect(body.data.publicationYear).toBe(newBookData.publicationYear);
+            expect(body.data.totalPages).toBe(newBookData.totalPages);
             expect(body.message).toBe("Book created successfully");
         });
 
@@ -138,7 +144,7 @@ describe("Book Endpoints", () => {
                 body: JSON.stringify(invalidData),
             });
 
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiErrorResponse<Book>;
 
             expect(res.status).toBe(422);
             expect(body.errors && body.errors[0] && body.errors[0].path[0]).toInclude("title");
@@ -159,7 +165,7 @@ describe("Book Endpoints", () => {
             });
 
             expect(res.status).toBe(200);
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse;
             expect(body.message).toBe("Book deleted successfully");
         });
 
@@ -218,13 +224,14 @@ describe("Book Endpoints", () => {
             });
 
             expect(res.status).toBe(200);
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse;
             expect(body.message).toBe("Book restored successfully");
 
             const getRes = await app.request(`/api/books/${softDeletedBook.id}`);
             expect(getRes.status).toBe(200);
-            const restoredBody = await getRes.json() as Body;
-            expect(restoredBody.data && !Array.isArray(restoredBody.data) && restoredBody.data.id).toBe(softDeletedBook.id);
+            const restoredBody = await getRes.json() as ApiSuccessResponse<Book>;
+            expect(restoredBody.data).toBeObject();
+            expect(restoredBody.data.id).toBe(softDeletedBook.id);
         });
 
         it("should return 403 for a MEMBER user trying to restore", async () => {
@@ -259,7 +266,7 @@ describe("Book Endpoints", () => {
             );
 
             expect(res.status).toBe(200);
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse;
             expect(body.message).toBe("Book permanently deleted successfully");
 
             const getRes = await app.request(`/api/books/${bookToHardDelete.id}`);

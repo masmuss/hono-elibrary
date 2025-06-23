@@ -14,18 +14,17 @@ import type { User } from "@/core/types/user";
 import { LoanStatus } from "@/lib/constants/enums/loan-status.enum";
 import type { Loan } from "@/core/types/loan";
 import type { Member } from "@/core/types/member";
+import { ApiErrorResponse, ApiSuccessResponse } from "./types";
 
-type Data = {
+type LoanResponse = {
     book: Book;
-    status: LoanStatus;
+    member: {
+        user: User
+    };
     librarian?: User;
 }
 
-type Body = {
-    message: string;
-    data: Data | Data[];
-    error: string | null;
-}
+type ExtensibleLoan = Loan & LoanResponse;
 
 describe("Loan Endpoints", () => {
     let adminToken: string;
@@ -62,12 +61,12 @@ describe("Loan Endpoints", () => {
                 },
                 body: JSON.stringify({ memberId: testMember.id, bookId: testBook.id }),
             });
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse<ExtensibleLoan>;
 
             expect(res.status).toBe(201);
             expect(body.message).toBe("Loan created successfully");
-            expect(!Array.isArray(body.data) && body.data.book.title).toBe(testBook.title);
-            expect(!Array.isArray(body.data) && body.data.status).toBe(LoanStatus.PENDING);
+            expect(body.data.book.title).toBe(testBook.title);
+            expect(body.data.status).toBe(LoanStatus.PENDING);
         });
 
         it("should return 400 if member has an active loan for the same book", async () => {
@@ -83,7 +82,7 @@ describe("Loan Endpoints", () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiErrorResponse;
             expect(body.error).toContain("sudah memiliki pinjaman aktif");
         });
 
@@ -112,13 +111,11 @@ describe("Loan Endpoints", () => {
             const res = await app.request("/api/loans", {
                 headers: { Authorization: `Bearer ${librarianToken}` },
             });
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse<ExtensibleLoan[]>;
 
             expect(res.status).toBe(200);
             expect(Array.isArray(body.data)).toBe(true);
-            if (Array.isArray(body.data)) {
-                expect(body.data.length).toBeGreaterThanOrEqual(1);
-            }
+            expect(body.data.length).toBeGreaterThanOrEqual(1);
         });
 
         it("should return 403 for a MEMBER trying to get all loans", async () => {
@@ -133,13 +130,11 @@ describe("Loan Endpoints", () => {
                 method: "POST",
                 headers: { Authorization: `Bearer ${librarianToken}` },
             });
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse<ExtensibleLoan>;
 
             expect(res.status).toBe(200);
-            if (!Array.isArray(body.data)) {
-                expect(body.data.status).toBe(LoanStatus.APPROVED);
-                expect(body.data.librarian?.email).toBe(librarianUser.email);
-            }
+            expect(body.data.status).toBe(LoanStatus.APPROVED);
+            expect(body.data.librarian?.email).toBe(librarianUser.email);
         });
 
         it("should allow a LIBRARIAN to reject a loan", async () => {
@@ -147,12 +142,10 @@ describe("Loan Endpoints", () => {
                 method: "POST",
                 headers: { Authorization: `Bearer ${librarianToken}` },
             });
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse<ExtensibleLoan>;
 
             expect(res.status).toBe(200);
-            if (!Array.isArray(body.data)) {
-                expect(body.data.status).toBe(LoanStatus.REJECTED);
-            }
+            expect(body.data.status).toBe(LoanStatus.REJECTED);
         });
 
         it("should return 400 if trying to approve an already approved loan", async () => {
@@ -167,7 +160,7 @@ describe("Loan Endpoints", () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiErrorResponse;
             expect(body.error).toContain("sudah dalam status: approved");
         });
     });
@@ -181,7 +174,7 @@ describe("Loan Endpoints", () => {
                 method: "POST",
                 headers: { Authorization: `Bearer ${librarianToken}` },
             });
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiErrorResponse;
             approvedLoan = body.data && !Array.isArray(body.data) && (body.data as any).loan ? (body.data as any).loan : body.data;
         });
 
@@ -190,7 +183,7 @@ describe("Loan Endpoints", () => {
                 method: "POST",
                 headers: { Authorization: `Bearer ${memberToken}` },
             });
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiSuccessResponse;
 
             expect(res.status).toBe(200);
             expect(body.message).toBe("Loan returned successfully");
@@ -205,7 +198,7 @@ describe("Loan Endpoints", () => {
             });
 
             expect(res.status).toBe(400);
-            const body = await res.json() as Body;
+            const body = await res.json() as ApiErrorResponse;
             expect(body.error).toContain("statusnya: pending");
         });
     });

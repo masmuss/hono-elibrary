@@ -4,12 +4,7 @@ import { describe, expect, it, beforeEach } from "bun:test";
 import { generateAuthToken } from "test/utils/auth-helpers";
 import { createTestUser, createTestCategory, createTestBook } from "test/utils/data-helpers";
 import type { Category } from "@/core/repositories/category.repository";
-
-interface CategoryResponse<T = any> {
-    message: string;
-    data: T;
-    error: string | null;
-}
+import { ApiSuccessResponse } from "./types";
 
 describe("Category Endpoints", () => {
     let adminToken: string;
@@ -32,7 +27,7 @@ describe("Category Endpoints", () => {
     describe("GET /api/categories", () => {
         it("should allow anyone to get a list of categories", async () => {
             const res = await app.request("/api/categories");
-            const body = await res.json() as CategoryResponse<Category[]>;
+            const body = await res.json() as ApiSuccessResponse<Category[]>;
             expect(res.status).toBe(200);
             expect(body.data.length).toBeGreaterThanOrEqual(1);
         });
@@ -46,7 +41,7 @@ describe("Category Endpoints", () => {
                 headers: { Authorization: `Bearer ${librarianToken}`, "Content-Type": "application/json" },
                 body: JSON.stringify(newCategoryData),
             });
-            const body = await res.json() as CategoryResponse<Category>;
+            const body = await res.json() as ApiSuccessResponse<Category>;
             expect(res.status).toBe(201);
             expect(body.data.name).toBe(newCategoryData.name);
         });
@@ -77,7 +72,7 @@ describe("Category Endpoints", () => {
                 headers: { Authorization: `Bearer ${librarianToken}`, "Content-Type": "application/json" },
                 body: JSON.stringify(updatedData),
             });
-            const body = await res.json() as CategoryResponse<Category>;
+            const body = await res.json() as ApiSuccessResponse<Category>;
             expect(res.status).toBe(200);
             expect(body.data.name).toBe(updatedData.name);
         });

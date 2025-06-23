@@ -7,12 +7,7 @@ import db from "@/db";
 import { eq } from "drizzle-orm";
 import { roles, users } from "@/db/schema";
 import { User } from "@/core/types/user";
-
-interface AdminUserResponse<T = any> {
-    message: string;
-    data: T;
-    error: string | null;
-}
+import type { ApiSuccessResponse } from "./types";
 
 describe("Admin User Management Endpoints", () => {
     let adminToken: string;
@@ -36,7 +31,7 @@ describe("Admin User Management Endpoints", () => {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
             expect(res.status).toBe(200);
-            const body = await res.json() as AdminUserResponse<User[]>;
+            const body = await res.json() as ApiSuccessResponse<User[]>;
             expect(body.data.length).toBeGreaterThanOrEqual(2);
         });
 
@@ -73,7 +68,7 @@ describe("Admin User Management Endpoints", () => {
             });
 
             expect(res.status).toBe(201);
-            const body = await res.json() as AdminUserResponse<User>;
+            const body = await res.json() as ApiSuccessResponse<User>;
             expect(body.data.username).toBe(newUserPayload.username);
         });
 
@@ -101,7 +96,7 @@ describe("Admin User Management Endpoints", () => {
             const res = await app.request(`/api/admin/users/${userToGet.id}`, {
                 headers: { Authorization: `Bearer ${adminToken}` },
             });
-            const body = await res.json() as AdminUserResponse<User>;
+            const body = await res.json() as ApiSuccessResponse<User>;
 
             expect(res.status).toBe(200);
             expect(body.data.id).toBe(userToGet.id);
@@ -150,7 +145,7 @@ describe("Admin User Management Endpoints", () => {
             });
 
             expect(res.status).toBe(200);
-            const body = await res.json() as AdminUserResponse<User>;
+            const body = await res.json() as ApiSuccessResponse<User>;
             expect(body.data.name).toBe("Updated Name");
 
             const userInDb = await db.query.users.findFirst({ where: eq(users.id, userToUpdate.id) });
@@ -197,7 +192,7 @@ describe("Admin User Management Endpoints", () => {
             });
 
             expect(res.status).toBe(200);
-            const body = await res.json() as AdminUserResponse;
+            const body = await res.json() as ApiSuccessResponse;
             expect(body.message).toBe("User deleted successfully");
 
             const userInDb = await db.query.users.findFirst({ where: eq(users.id, userToDelete.id) });
