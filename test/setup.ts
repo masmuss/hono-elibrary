@@ -3,6 +3,7 @@ import * as schema from '@/db/schema';
 import { UserRole } from '@/lib/constants/enums/user-roles.enum';
 import { eq } from 'drizzle-orm';
 import { afterAll, beforeEach } from 'bun:test'
+import redisClient from '@/lib/redis';
 
 async function clearDatabase() {
     try {
@@ -34,6 +35,13 @@ async function seedRoles() {
 
 afterAll(async () => {
     await clearDatabase();
+
+    if (redisClient.connected === true) {
+        redisClient.close();
+        console.log('Redis client disconnected.');
+    }
+
+    console.log('Global teardown complete.');
 });
 
 beforeEach(async () => {

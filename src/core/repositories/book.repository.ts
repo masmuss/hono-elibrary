@@ -6,6 +6,8 @@ import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Book, BookInsert, BookUpdate } from "../types/book";
 import type { Filter } from "./types";
 import { APIError } from "../helpers/api-error";
+import { CacheKeys } from "@/lib/constants/cache-keys";
+import redisClient from "@/lib/redis";
 
 export class BookRepository extends SoftDeleteMixin implements Repository {
 	constructor() {
@@ -54,6 +56,13 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 	}
 
 	async byId(id: number): Promise<{ data: Book }> {
+		const cacheKey = CacheKeys.BOOKS.BY_ID(id);
+
+		const cachedBook = await redisClient.get(cacheKey);
+		if (cachedBook) {
+			return JSON.parse(cachedBook);
+		}
+
 		const query = await this.db.query.books.findFirst({
 			where: and(eq(books.id, id), isNull(books.deletedAt)),
 			with: {
@@ -68,7 +77,11 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		if (!query) {
 			throw new APIError(404, "Book not found", "BOOK_NOT_FOUND");
 		}
-		return { data: query };
+		const result = { data: query };
+
+		redisClient.set(cacheKey, JSON.stringify(result.data), "EX", 3600);
+
+		return result;
 	}
 
 	async create(book: BookInsert): Promise<{ data: Book }> {
@@ -76,6 +89,9 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		if (!query) {
 			throw new APIError(500, "Failed to create book record");
 		}
+
+		await redisClient.del(CacheKeys.BOOKS.PAGINATED(1, 10));
+
 		return { data: query };
 	}
 
@@ -89,6 +105,9 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		if (!query) {
 			throw new APIError(404, "Book not found to update", "BOOK_NOT_FOUND");
 		}
+
+		await redisClient.del(CacheKeys.BOOKS.BY_ID(id));
+
 		return { data: query };
 	}
 }
