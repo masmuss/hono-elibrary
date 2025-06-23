@@ -1,8 +1,21 @@
 import { books } from "@/db/schema";
 import { createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
+import {
+	orderQuerySchema,
+	paginationQuerySchema,
+	searchQuerySchema,
+} from "../helpers/schemas";
 
-export const selectBook = createSelectSchema(books);
+export const selectBook = createSelectSchema(books).openapi({
+	description: "Schema for selecting book data",
+});
+
+export const getAllBooksQuerySchema = z.object({
+	...paginationQuerySchema.shape,
+	...searchQuerySchema.shape,
+	...orderQuerySchema.shape,
+});
 
 export const getAllBooksSuccessResponse = z.object({
 	data: z.array(
@@ -10,7 +23,7 @@ export const getAllBooksSuccessResponse = z.object({
 			id: true,
 			isbn: true,
 			title: true,
-			stock: true,
+			availableCopies: true,
 			author: true,
 			createdAt: true,
 		}),

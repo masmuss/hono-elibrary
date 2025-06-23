@@ -1,10 +1,11 @@
 import { z } from "zod";
 
-const PaginationQuerySchema = z.object({
+const paginationQuerySchema = z.object({
 	page: z.coerce
 		.number()
 		.optional()
 		.openapi({
+			description: "Page number for pagination",
 			param: {
 				name: "page",
 				in: "query",
@@ -16,6 +17,7 @@ const PaginationQuerySchema = z.object({
 		.number()
 		.optional()
 		.openapi({
+			description: "Number of items per page for pagination",
 			param: {
 				name: "pageSize",
 				in: "query",
@@ -23,29 +25,6 @@ const PaginationQuerySchema = z.object({
 			},
 			example: 10,
 		}),
-	orderBy: z
-		.string()
-		.optional()
-		.openapi({
-			param: {
-				name: "orderBy",
-				in: "query",
-				required: false,
-			},
-			example: "createdAt",
-		}),
-	search: z
-		.string()
-		.optional()
-		.openapi({
-			param: {
-				name: "search",
-				in: "query",
-				description: "Search books by title, author, isbn, or publisher",
-				required: false,
-			},
-			example: "search term",
-		}),
 });
 
-export default PaginationQuerySchema;
+export default paginationQuerySchema;

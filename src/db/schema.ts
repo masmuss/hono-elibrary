@@ -4,6 +4,7 @@ import {
 	integer,
 	pgTable,
 	text,
+	timestamp,
 	uuid,
 	varchar,
 } from "drizzle-orm/pg-core";
@@ -49,9 +50,11 @@ export const books = pgTable("books", {
 	synopsis: text("synopsis"),
 	author: varchar("author", { length: 255 }),
 	publisher: varchar("publisher", { length: 255 }),
-	pages: integer("pages").notNull(),
-	year: integer("year").notNull(),
-	stock: integer("stock").default(0),
+	totalPages: integer("total_pages").notNull(),
+	coverImageUrl: varchar("cover_image_url", { length: 255 }),
+	publicationYear: integer("publication_year").notNull(),
+	totalCopies: integer("total_copies").notNull().default(1),
+	availableCopies: integer("available_copies").notNull().default(1),
 	categoryId: integer("category_id")
 		.references(() => categories.id)
 		.notNull(),
@@ -70,7 +73,7 @@ export const members = pgTable("members", {
 	userId: uuid("user_id")
 		.references(() => users.id)
 		.notNull(),
-	phone: varchar("phone", { length: 20 }),
+	phone: varchar("phone", { length: 50 }),
 	address: text("address"),
 	...timestamps,
 });
@@ -87,12 +90,21 @@ export const loans = pgTable("loans", {
 	memberId: uuid("member_id")
 		.references(() => members.id)
 		.notNull(),
+	librarianId: uuid("librarian_id").references(() => users.id),
 	bookId: integer("book_id")
-		.references(() => books.id)
+		.references(() => books.id, { onDelete: "cascade" })
 		.notNull(),
-	loanDate: date("loan_date").defaultNow(),
-	returnDate: date("return_date"),
+	loanDate: timestamp("loan_date").notNull().defaultNow(),
+	dueDate: timestamp("due_date"),
+	status: varchar("status", {
+		length: 20,
+		enum: ["pending", "approved", "rejected", "returned"],
+	})
+		.notNull()
+		.default("pending"),
+	approvedAt: timestamp("approved_at"),
 	returnedAt: date("returned_at"), // jika null berarti belum dikembalikan
+	...timestamps,
 });
 
 export const loanRelations = relations(loans, ({ one }) => ({
@@ -103,5 +115,9 @@ export const loanRelations = relations(loans, ({ one }) => ({
 	book: one(books, {
 		fields: [loans.bookId],
 		references: [books.id],
+	}),
+	librarian: one(users, {
+		fields: [loans.librarianId],
+		references: [users.id],
 	}),
 }));

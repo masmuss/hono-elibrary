@@ -5,6 +5,7 @@ const UUIDParamsSchema = z.object({
 		.string()
 		.uuid()
 		.openapi({
+			description: "Unique identifier for the resource, formatted as a UUID",
 			param: {
 				name: "id",
 				in: "path",

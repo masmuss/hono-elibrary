@@ -16,118 +16,46 @@ export class AuthHandler extends BaseHandler {
 	}
 
 	register: AppRouteHandler<RegisterRoute> = async (c) => {
-		try {
-			const body = c.req.valid("json");
-
-			if (!body) {
-				throw new Error("Invalid request body");
-			}
-
-			const user = await this.repository.register(body);
-
-			if (!user) {
-				return c.json(
-					this.responseBuilder(
-						null,
-						"User with same username or email already exists",
-					),
-				);
-			}
-
-			return c.json(this.responseBuilder(user, "User registered successfully"));
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to register user", error as Error),
-			);
-		}
+		const body = c.req.valid("json");
+		const user = await this.repository.register(body);
+		return c.json(
+			this.buildSuccessResponse(user, "User registered successfully"),
+			201,
+		);
 	};
 
 	login: AppRouteHandler<LoginRoute> = async (c) => {
-		try {
-			const body = c.req.valid("json");
+		const body = c.req.valid("json");
+		const user = await this.repository.login(body.username, body.password);
 
-			if (!body) {
-				throw new Error("Invalid request body");
-			}
+		const { id, name, username, role } = user;
 
-			const user = await this.repository.login(body.username, body.password);
+		const token = await sign(
+			{ id, username, name, role: role.name },
+			envRuntime.JWT_SECRET,
+		);
 
-			if (!user) {
-				return c.json(
-					this.responseBuilder(null, "Invalid username or password"),
-				);
-			}
+		const responseData = { id, name, username, token };
 
-			const { id, name, username, role } = user;
-
-			const token = await sign(
-				{
-					id: id,
-					username: username,
-					name: name,
-					role: role.name,
-				},
-				envRuntime.JWT_SECRET,
-			);
-
-			c.set("user", id);
-			c.set("session", token);
-
-			return c.json(
-				{
-					data: {
-						id,
-						name,
-						username,
-						token,
-					},
-					message: "Login successful",
-					error: null,
-				},
-				200,
-			);
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to login user", error as Error),
-			);
-		}
+		return c.json(
+			this.buildSuccessResponse({ data: responseData }, "Login successful"),
+			200,
+		);
 	};
 
 	profile: AppRouteHandler<ProfileRoute> = async (c) => {
-		try {
-			const user = c.get("user");
-
-			if (!user) {
-				return c.json(this.responseBuilder(null, "User not found"));
-			}
-
-			return c.json(
-				this.responseBuilder(
-					{ data: user },
-					"User profile retrieved successfully",
-				),
-			);
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(
-					null,
-					"Failed to get user profile",
-					error as Error,
-				),
-			);
-		}
+		const user = c.get("user");
+		return c.json(
+			this.buildSuccessResponse(
+				{ data: user },
+				"User profile retrieved successfully",
+			),
+			200,
+		);
 	};
 
 	logout: AppRouteHandler<LogoutRoute> = async (c) => {
-		try {
-			c.set("user", null);
-			c.set("session", null);
-
-			return c.json(this.responseBuilder(null, "Logout successful"));
-		} catch (error: unknown) {
-			return c.json(
-				this.responseBuilder(null, "Failed to logout user", error as Error),
-			);
-		}
+		c.set("user", null);
+		return c.json(this.buildSuccessResponse(null, "Logout successful"), 200);
 	};
 }

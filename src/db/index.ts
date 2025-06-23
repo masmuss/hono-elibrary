@@ -6,7 +6,7 @@ const db = drizzle({
 	connection: envRuntime.DATABASE_URL,
 	casing: "snake_case",
 	schema,
-	logger: true,
+	logger: false,
 });
 
 export default db;

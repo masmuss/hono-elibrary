@@ -1,6 +1,11 @@
 import { BaseRoutes } from "@/core/base/base-routes";
 import jsonContentRequired from "@/core/helpers/json-content-required";
 import {
+	loginSuccessResponse,
+	profileSuccessResponse,
+	registerSuccessResponse,
+} from "@/core/schemas/auth.schema";
+import {
 	authHeadersSchema,
 	loginSchema,
 	registerSchema,
@@ -18,13 +23,8 @@ export class AuthRoutes extends BaseRoutes {
 			body: jsonContentRequired(loginSchema, "Login schema"),
 		},
 		responses: {
-			[200]: this.successResponse(
-				z.object({
-					data: z.any(),
-				}),
-				"User logged in successfully",
-			),
-			[401]: this.errorResponse(z.string(), "Invalid username or password"),
+			200: this.successResponse(loginSuccessResponse, "Login successful"),
+			401: this.errorResponse("Invalid credentials"),
 		},
 	});
 
@@ -37,16 +37,12 @@ export class AuthRoutes extends BaseRoutes {
 			body: jsonContentRequired(registerSchema, "Register schema"),
 		},
 		responses: {
-			[200]: this.successResponse(
-				z.object({
-					data: z.object({
-						name: z.string(),
-						username: z.string(),
-						email: z.string(),
-					}),
-				}),
+			201: this.successResponse(
+				registerSuccessResponse,
 				"User registered successfully",
 			),
+			400: this.errorResponse("Bad Request (e.g., user already exists)"),
+			422: this.errorResponse("Validation Error"),
 		},
 	});
 
@@ -60,11 +56,11 @@ export class AuthRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware],
 		responses: {
-			[200]: this.successResponse(
-				z.any(),
+			200: this.successResponse(
+				profileSuccessResponse,
 				"User profile retrieved successfully",
 			),
-			[401]: this.errorResponse(z.string(), "Unauthorized"),
+			401: this.errorResponse("Unauthorized"),
 		},
 	});
 
@@ -78,8 +74,8 @@ export class AuthRoutes extends BaseRoutes {
 		},
 		middleware: [authMiddleware],
 		responses: {
-			[200]: this.successResponse(z.string(), "User logged out successfully"),
-			[401]: this.errorResponse(z.string(), "Unauthorized"),
+			200: this.successResponse(z.null(), "User logged out successfully"),
+			401: this.errorResponse("Unauthorized"),
 		},
 	});
 }

@@ -29,6 +29,16 @@ export default function openAPI(app: App) {
 				},
 			],
 			url: "/doc",
+			authentication: {
+				securitySchemes: {
+					apiKeyHeader: {
+						type: "apiKey",
+						in: "header",
+						name: "Authorization",
+						description: "Bearer token for authentication",
+					},
+				},
+			},
 		}),
 	);
 }

@@ -1,0 +1,20 @@
+echo "
+✋ Tunggu sebentar! Menjalankan semua unit test sebagai gerbang kualitas terakhir...
+--------------------------------------------------------------------------
+"
+
+bun run test
+
+exit_code=$?
+
+echo "--------------------------------------------------------------------------"
+
+if [ $exit_code -eq 0 ]; then
+  echo "🎉 Mantap! Semua tes lolos. Kode aman untuk dikirim ke tujuan! 🚀"
+else
+  echo "🛑 PUSH DIBATALKAN! Ada tes yang gagal."
+  echo "   Perbaiki dulu tes yang gagal sebelum mencoba push lagi. Jaga kualitas! 💪"
+  exit 1
+fi
+
+exit 0
