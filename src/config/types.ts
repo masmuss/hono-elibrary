@@ -4,6 +4,7 @@ export const EnvSchema = z.object({
 	NODE_ENV: z.string().default("development"),
 	DATABASE_URL: z.string().url().readonly(),
 	JWT_SECRET: z.string().min(10).readonly(),
+	REDIS_URL: z.string().url().default("redis://localhost:6379").readonly(),
 });
 
 export type Environment = z.infer<typeof EnvSchema>;

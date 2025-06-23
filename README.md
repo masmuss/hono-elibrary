@@ -2,11 +2,15 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Bun-%23000000.svg?style=for-the-badge&logo=bun" alt="Bun" />
-  <img src="https://img.shields.io/badge/Hono-%23E36002.svg?style=for-the-badge&logo=hono" alt="Hono" />
+  <img src="https://img.shields.io/badge/Hono-E36002?logo=hono&logoColor=fff&style=for-the-badge" alt="Hono Badge">
   <img src="https://img.shields.io/badge/Drizzle-%23C5F74F.svg?style=for-the-badge&logo=drizzle&logoColor=black" alt="Drizzle ORM" />
   <img src="https://img.shields.io/badge/PostgreSQL-%234169E1.svg?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
+  <img src="https://img.shields.io/badge/Redis-%23FF4438?logo=redis&logoColor=fff&style=for-the-badge" alt="Redis Badge">
   <img src="https://img.shields.io/badge/Docker-%232496ED.svg?style=for-the-badge&logo=docker&logoColor=white" alt="Docker" />
+  <img src="https://img.shields.io/badge/Scalar-1A1A1A?logo=scalar&logoColor=fff&style=for-the-badge" alt="Scalar Badge">
+  <img src="https://img.shields.io/badge/Zod-3E67B1?logo=zod&logoColor=fff&style=for-the-badge" alt="Zod Badge">
   <img src="https://img.shields.io/badge/TypeScript-%233178C6.svg?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Biome-60A5FA?logo=biome&logoColor=fff&style=for-the-badge" alt="Biome Badge">
 </p>
 
 A backend API for a simple e-library system built with a modern stack, featuring Bun as the runtime, Hono as the web framework, and Drizzle as the ORM. This project is fully containerized with Docker for ease of development and deployment.
@@ -28,6 +32,7 @@ A backend API for a simple e-library system built with a modern stack, featuring
 -   **Web Framework**: [Hono](https://hono.dev/)
 -   **Database**: [PostgreSQL](https://www.postgresql.org/)
 -   **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
+-   **Caching**: [Redis](https://redis.io/)
 -   **Validation**: [Zod](https://zod.dev/)
 -   **Containerization**: [Docker](https://www.docker.com/) & Docker Compose
 -   **Language**: [TypeScript](https://www.typescriptlang.org/)
@@ -40,8 +45,8 @@ To run this project in your local environment, you must have **Bun** and **Docke
 ### 1. **Clone the Repository**
 
 ```bash
-git clone <YOUR_REPOSITORY_URL>
-cd e-library
+git clone https://github.com/masmuss/hono-elibrary.git
+cd hono-elibrary
 ```
 
 ### 2. **Run the Setup Script**

@@ -2,6 +2,9 @@
   "name": "e-library",
   "version": "1.0.0",
   "description": "A simple e-library API using Hono and Drizzle ORM",
+  "engines": {
+    "bun": ">=1.2.0"
+  },
   "scripts": {
     "dev": "bun run --hot src/index.ts",
     "test": "bun test --env-file=.env.test --preload ./test/setup.ts",

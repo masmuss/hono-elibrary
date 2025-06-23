@@ -5,6 +5,8 @@ import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { Filter } from "./types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import { APIError } from "../helpers/api-error";
+import redisClient from "@/lib/redis";
+import { CacheKeys } from "@/lib/constants/cache-keys";
 
 export type Category = InferSelectModel<typeof categories>;
 export type CategoryInsert = InferInsertModel<typeof categories>;
@@ -14,6 +16,14 @@ export class CategoryRepository extends SoftDeleteMixin {
 		super(categories, {
 			latest: desc(categories.createdAt),
 		});
+	}
+
+	private async invalidateCache() {
+		const keys = await redisClient.keys(CacheKeys.CATEGORIES.ALL_KEYS_PATTERN);
+
+		for (const key of keys) {
+			await redisClient.del(key);
+		}
 	}
 
 	async get(filter: Filter): Promise<PaginatedData> {
@@ -28,6 +38,16 @@ export class CategoryRepository extends SoftDeleteMixin {
 			isNull(categories.deletedAt),
 		);
 
+		const cacheKey = CacheKeys.CATEGORIES.PAGINATED(
+			filter.page || 1,
+			filter.pageSize || 10,
+		);
+
+		const cachedData = await redisClient.get(cacheKey);
+		if (cachedData) {
+			return JSON.parse(cachedData);
+		}
+
 		const query = this.db
 			.select({
 				id: categories.id,
@@ -37,23 +57,35 @@ export class CategoryRepository extends SoftDeleteMixin {
 			.from(this.table)
 			.where(whereCondition);
 
-		return await this.withPagination(
+		const result = await this.withPagination(
 			query.$dynamic(),
 			filter.orderBy,
 			undefined,
 			filter.page,
 			filter.pageSize,
 		);
+
+		await redisClient.set(cacheKey, JSON.stringify(result), "EX", 3600);
+		return result;
 	}
 
 	async byId(id: number): Promise<{ data: Category }> {
 		const [result] = (await this.db
 			.select()
 			.from(this.table)
-			.where(eq(categories.id, id))) as Category[];
+			.where(
+				and(eq(categories.id, id), isNull(categories.deletedAt)),
+			)) as Category[];
 		if (!result) {
 			throw new APIError(404, "Category not found", "CATEGORY_NOT_FOUND");
 		}
+
+		const cacheKey = CacheKeys.CATEGORIES.BY_ID(id);
+		const cachedData = await redisClient.get(cacheKey);
+		if (cachedData) {
+			return { data: JSON.parse(cachedData) };
+		}
+
 		return { data: result };
 	}
 
@@ -70,6 +102,8 @@ export class CategoryRepository extends SoftDeleteMixin {
 			);
 		}
 
+		await this.invalidateCache();
+
 		return { data: query[0] };
 	}
 
@@ -85,6 +119,8 @@ export class CategoryRepository extends SoftDeleteMixin {
 		if (!result) {
 			throw new APIError(404, "Category not found", "CATEGORY_NOT_FOUND");
 		}
+
+		await this.invalidateCache();
 
 		return { data: result };
 	}
@@ -107,6 +143,9 @@ export class CategoryRepository extends SoftDeleteMixin {
 		if (!result) {
 			throw new APIError(404, "Category not found", "CATEGORY_NOT_FOUND");
 		}
+
+		await this.invalidateCache();
+
 		return { data: result };
 	}
 }
