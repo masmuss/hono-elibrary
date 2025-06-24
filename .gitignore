@@ -13,10 +13,9 @@ dist/
 node_modules/
 
 # env
-.env.local
-.env.docker
+.env
 .env.test
-.env.production
+
 .dev.vars
 
 # logs

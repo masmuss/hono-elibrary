@@ -1,6 +1,7 @@
 import db from "@/db";
 import { sql } from "drizzle-orm";
 import { describe, expect, it } from "bun:test";
+import envRuntime from "@/config/env-runtime";
 
 describe("Database Connection", () => {
     it("should connect to the database and execute a simple query", async () => {
@@ -28,7 +29,7 @@ describe("Database Schema Verification", () => {
         const result = await db.execute(sql`SELECT current_database()`);
         const dbName = result.rows[0].current_database;
 
-        const expectedDbName = process.env.DATABASE_URL?.split("/").pop();
+        const expectedDbName = envRuntime.POSTGRES_DB;
 
         expect(dbName).toBe(expectedDbName);
     });

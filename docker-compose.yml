@@ -3,7 +3,7 @@ services:
     image: postgres:16.9-alpine3.22
     restart: always
     env_file:
-      - .env.docker
+      - .env
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
@@ -30,7 +30,7 @@ services:
       dockerfile: Dockerfile.dev
     restart: always
     env_file:
-      - .env.docker
+      - .env
     ports:
       - "3000:3000"
     develop:

@@ -3,13 +3,20 @@ import { eq } from 'drizzle-orm';
 import { UserRole } from '@/lib/constants/enums/user-roles.enum';
 import db from '@/db';
 
-import { describe, beforeAll, it, expect, beforeEach } from 'bun:test'
+import { describe, beforeAll, it, expect, beforeEach, mock } from 'bun:test'
 import app from '@/index';
 import { createTestUser } from './utils/data-helpers';
 import { generateAuthToken } from './utils/auth-helpers';
 import { ApiErrorResponse, ApiSuccessResponse } from './types';
 import { User } from '@/core/types/user';
+import { UserRepository } from '@/core/repositories/user.repository';
 
+mock.module("@/lib/mailer", () => ({
+    sendPasswordResetEmail: async (email: string, token: string) => {
+        console.log(`Mocked email sent to ${email} with token ${token}`);
+        return;
+    },
+}));
 
 describe('Auth Endpoints', () => {
     let adminRole: { id: number; name: string };
@@ -438,6 +445,117 @@ describe('Auth Endpoints', () => {
 
             expect(res.status).toBe(401);
             expect(body.message).toEqual('Unauthorized');
+        });
+    });
+});
+
+describe("Password Reset Flow", () => {
+    let testUser: any;
+    const userRepo = new UserRepository();
+
+    beforeEach(async () => {
+        const { user } = await createTestUser(UserRole.MEMBER);
+        testUser = user;
+    });
+
+    describe("POST /api/auth/forgot-password", () => {
+        it("should generate a reset token and mock-send an email for a valid user", async () => {
+            const res = await app.request("/api/auth/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: testUser.email }),
+            });
+
+            expect(res.status).toBe(200);
+            const body = await res.json() as ApiSuccessResponse;
+            expect(body.message).toContain("a password reset link has been sent");
+
+            const userInDb = await db.query.users.findFirst({ where: eq(users.id, testUser.id) });
+
+            expect(userInDb?.passwordResetToken).toBeString();
+            expect(userInDb?.passwordResetExpires).toBeInstanceOf(Date);
+        });
+
+        it("should return a generic success message even if the email does not exist", async () => {
+            const res = await app.request("/api/auth/forgot-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email: "nonexistent@example.com" }),
+            });
+
+            expect(res.status).toBe(200);
+            const body = await res.json() as ApiSuccessResponse;
+            expect(body.message).toContain("a password reset link has been sent");
+        });
+    });
+
+    describe("POST /api/auth/reset-password", () => {
+        let validResetToken: string;
+
+        beforeEach(async () => {
+            validResetToken = await userRepo.setPasswordResetToken(testUser.id);
+        });
+
+        it("should successfully reset the password with a valid token", async () => {
+            const newPassword = "MyNewSecurePassword123";
+            const res = await app.request("/api/auth/reset-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    token: validResetToken,
+                    newPassword: newPassword,
+                }),
+            });
+
+            expect(res.status).toBe(200);
+            const body = await res.json() as ApiSuccessResponse;
+            expect(body.message).toBe("Password has been reset successfully.");
+
+            const loginRes = await app.request("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: testUser.username, password: newPassword }),
+            });
+            expect(loginRes.status).toBe(200);
+
+            const userInDb = await db.query.users.findFirst({ where: eq(users.id, testUser.id) });
+            expect(userInDb?.passwordResetToken).toBeNull();
+        });
+
+        it("should fail if the reset token is invalid", async () => {
+            const res = await app.request("/api/auth/reset-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    token: "this-is-an-invalid-token",
+                    newPassword: "any-password",
+                }),
+            });
+
+            expect(res.status).toBe(400);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("INVALID_TOKEN");
+        });
+
+        it("should fail if the reset token has expired", async () => {
+            const expiredDate = new Date(Date.now() - 2 * 60 * 60 * 1000);
+            await db
+                .update(users)
+                .set({ passwordResetExpires: expiredDate })
+                .where(eq(users.id, testUser.id));
+
+            const res = await app.request("/api/auth/reset-password", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    token: validResetToken,
+                    newPassword: "any-password",
+                }),
+            });
+
+            expect(res.status).toBe(400);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("INVALID_TOKEN");
         });
     });
 });
