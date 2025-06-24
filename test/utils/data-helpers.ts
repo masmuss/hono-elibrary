@@ -8,13 +8,16 @@ import { hashPassword } from './auth-helpers';
 
 type RoleName = UserRole;
 
-export async function createTestUser(roleName: RoleName = UserRole.MEMBER) {
+export async function createTestUser(roleName: RoleName = UserRole.MEMBER, password?: string) {
     const role = await db.query.roles.findFirst({ where: eq(schema.roles.name, roleName) });
     if (!role) {
         throw new Error(`Role ${roleName} not found. Ensure roles are seeded.`);
     }
 
-    const password = faker.internet.password({ length: 12 });
+    if (!password) {
+        password = faker.internet.password({ length: 12 });
+    }
+
     const { hashedPassword, salt } = await hashPassword(password);
 
     const newUser = {

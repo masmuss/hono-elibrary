@@ -208,6 +208,67 @@ describe('Auth Endpoints', () => {
         });
     });
 
+    describe("POST /api/auth/refresh", () => {
+        let refreshToken: string;
+        let validUser: User;
+
+        beforeEach(async () => {
+            const { user, password } = await createTestUser(UserRole.MEMBER, "password123");
+            validUser = user;
+
+            const res = await app.request("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user.username, password: password }),
+            });
+
+            const setCookieHeader = res.headers.get("Set-Cookie") || "";
+
+            const match = setCookieHeader.match(/refreshToken=([^;]+)/);
+            if (match) {
+                refreshToken = match[1];
+            }
+        });
+
+        it("should issue a new access token with a valid refresh token", async () => {
+            expect(refreshToken).toBeString();
+
+            const res = await app.request("/api/auth/refresh", {
+                method: "POST",
+                headers: {
+                    "Cookie": `refreshToken=${refreshToken}`
+                }
+            });
+
+            expect(res.status).toBe(200);
+            const body = await res.json() as ApiSuccessResponse<{ token: string }>;
+            expect(body.data.token).toBeString();
+        });
+
+        it("should fail if refresh token is invalid", async () => {
+            const res = await app.request("/api/auth/refresh", {
+                method: "POST",
+                headers: {
+                    "Cookie": "refreshToken=this.is.an.invalid.token"
+                }
+            });
+
+            expect(res.status).toBe(401);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("REFRESH_TOKEN_INVALID");
+        });
+
+        it("should fail if refresh token cookie is missing", async () => {
+            const res = await app.request("/api/auth/refresh", {
+                method: "POST",
+            });
+
+            expect(res.status).toBe(401);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("REFRESH_TOKEN_MISSING");
+        });
+    });
+
     describe('GET /api/auth/profile', () => {
         let testUser: any;
         let testToken: string;
@@ -266,6 +327,76 @@ describe('Auth Endpoints', () => {
 
             expect(res.status).toBe(401);
             expect(body.message).toBe('Invalid or expired token');
+        });
+    });
+
+    describe("PUT /api/auth/change-password", () => {
+        let testUser: any;
+        let plainPassword = "password123";
+        let userToken: string;
+
+        beforeEach(async () => {
+            const { user, password } = await createTestUser(UserRole.MEMBER, plainPassword);
+            testUser = user;
+            userToken = await generateAuthToken({ id: user.id, role: UserRole.MEMBER });
+        });
+
+        it("should allow a logged-in user to change their password", async () => {
+            const newPassword = "new-strong-password-456";
+            const res = await app.request("/api/auth/change-password", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${userToken}`,
+                },
+                body: JSON.stringify({
+                    currentPassword: plainPassword,
+                    newPassword: newPassword,
+                }),
+            });
+
+            expect(res.status).toBe(200);
+
+            const loginWithNewPasswordRes = await app.request("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: testUser.username, password: newPassword }),
+            });
+            expect(loginWithNewPasswordRes.status).toBe(200);
+        });
+
+        it("should return 400 if the current password is incorrect", async () => {
+            const res = await app.request("/api/auth/change-password", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${userToken}`,
+                },
+                body: JSON.stringify({
+                    currentPassword: "this-is-a-wrong-password",
+                    newPassword: "any-new-password",
+                }),
+            });
+
+            expect(res.status).toBe(400);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("INVALID_CURRENT_PASSWORD");
+        });
+
+        it("should return 422 if the new password is too short", async () => {
+            const res = await app.request("/api/auth/change-password", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${userToken}`,
+                },
+                body: JSON.stringify({
+                    currentPassword: plainPassword,
+                    newPassword: "short",
+                }),
+            });
+
+            expect(res.status).toBe(422);
         });
     });
 

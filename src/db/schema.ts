@@ -24,6 +24,7 @@ export const users = pgTable("users", {
 	email: varchar("email", { length: 255 }).notNull().unique(),
 	password: varchar("password", { length: 255 }).notNull(),
 	salt: varchar("salt", { length: 255 }).notNull(),
+	refreshToken: text("refresh_token"),
 	roleId: integer("role_id")
 		.references(() => roles.id)
 		.notNull(),
