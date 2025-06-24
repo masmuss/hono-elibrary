@@ -1,15 +1,12 @@
 import type { PaginatedData } from "@/core/base/types";
 import { books, categories } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
-import type { InferInsertModel, InferSelectModel } from "drizzle-orm";
 import type { Filter } from "./types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import { APIError } from "../helpers/api-error";
 import redisClient from "@/lib/redis";
 import { CacheKeys } from "@/lib/constants/cache-keys";
-
-export type Category = InferSelectModel<typeof categories>;
-export type CategoryInsert = InferInsertModel<typeof categories>;
+import type { Category, CategoryInsert } from "../types/category";
 
 export class CategoryRepository extends SoftDeleteMixin {
 	constructor() {

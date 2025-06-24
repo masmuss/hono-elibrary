@@ -1,9 +1,11 @@
 import { books, loans } from "@/db/schema";
-import { and, desc, eq, isNull, sql } from "drizzle-orm";
+import { and, count, desc, eq, isNull, sql } from "drizzle-orm";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Loan, LoanQueryResult } from "../types/loan";
 import type { Filter } from "./types";
 import { APIError } from "../helpers/api-error";
+
+const MAX_ACTIVE_LOANS = 3;
 
 export class LoanRepository extends SoftDeleteMixin {
 	constructor() {
@@ -46,7 +48,6 @@ export class LoanRepository extends SoftDeleteMixin {
 					},
 				},
 				librarian: {
-					// Selalu sertakan untuk konsistensi, bisa difilter nanti jika tidak perlu
 					columns: {
 						name: true,
 						email: true,
@@ -162,6 +163,21 @@ export class LoanRepository extends SoftDeleteMixin {
 	}
 
 	async createLoan(memberId: string, bookId: number): Promise<LoanQueryResult> {
+		const activeLoansCountResult = await this.db
+			.select({ value: count() })
+			.from(loans)
+			.where(and(eq(loans.memberId, memberId), isNull(loans.returnedAt)));
+
+		const activeLoansCount = activeLoansCountResult[0].value;
+
+		if (activeLoansCount >= MAX_ACTIVE_LOANS) {
+			throw new APIError(
+				400,
+				`Loan limit reached. Members can only have a maximum of ${MAX_ACTIVE_LOANS} active loans.`,
+				"LOAN_LIMIT_REACHED",
+			);
+		}
+
 		if (await this.hasActiveLoan(memberId, bookId)) {
 			throw new APIError(
 				400,
