@@ -1,9 +1,11 @@
 import { BaseRoutes } from "@/core/base/base-routes";
 import jsonContentRequired from "@/core/helpers/json-content-required";
 import {
+	forgotPasswordSchema,
 	loginSuccessResponse,
 	profileSuccessResponse,
 	registerSuccessResponse,
+	resetPasswordSchema,
 } from "@/core/schemas/auth.schema";
 import {
 	authHeadersSchema,
@@ -58,6 +60,35 @@ export class AuthRoutes extends BaseRoutes {
 				"Token refreshed successfully",
 			),
 			401: this.errorResponse("Unauthorized"),
+		},
+	});
+
+	forgotPassword = createRoute({
+		tags: ["Auth"],
+		description: "Request a password reset link",
+		path: "/auth/forgot-password",
+		method: "post",
+		request: {
+			body: jsonContentRequired(forgotPasswordSchema, "Forgot password payload"),
+		},
+		responses: {
+			200: this.successResponse(z.null(), "Password reset link sent"),
+			422: this.errorResponse("Validation Error"),
+		},
+	});
+
+	resetPassword = createRoute({
+		tags: ["Auth"],
+		description: "Reset password using a token",
+		path: "/auth/reset-password",
+		method: "post",
+		request: {
+			body: jsonContentRequired(resetPasswordSchema, "Reset password payload"),
+		},
+		responses: {
+			200: this.successResponse(z.null(), "Password has been reset"),
+			400: this.errorResponse("Bad Request (e.g., token is invalid or expired)"),
+			422: this.errorResponse("Validation Error"),
 		},
 	});
 
@@ -121,4 +152,6 @@ export type LoginRoute = typeof AuthRoutes.prototype.login;
 export type RefreshTokenRoute = typeof AuthRoutes.prototype.refresh;
 export type ProfileRoute = typeof AuthRoutes.prototype.profile;
 export type ChangePasswordRoute = typeof AuthRoutes.prototype.changePassword;
+export type ForgotPasswordRoute = typeof AuthRoutes.prototype.forgotPassword;
+export type ResetPasswordRoute = typeof AuthRoutes.prototype.resetPassword;
 export type LogoutRoute = typeof AuthRoutes.prototype.logout;

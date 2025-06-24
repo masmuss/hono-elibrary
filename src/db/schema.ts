@@ -25,6 +25,8 @@ export const users = pgTable("users", {
 	password: varchar("password", { length: 255 }).notNull(),
 	salt: varchar("salt", { length: 255 }).notNull(),
 	refreshToken: text("refresh_token"),
+	passwordResetToken: text("password_reset_token"),
+	passwordResetExpires: timestamp("password_reset_expires"),
 	roleId: integer("role_id")
 		.references(() => roles.id)
 		.notNull(),

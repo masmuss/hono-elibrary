@@ -1,11 +1,13 @@
 import type { AppRouteHandler } from "@/lib/types";
 import type {
 	ChangePasswordRoute,
+	ForgotPasswordRoute,
 	LoginRoute,
 	LogoutRoute,
 	ProfileRoute,
 	RefreshTokenRoute,
 	RegisterRoute,
+	ResetPasswordRoute,
 } from "@/routes/auth/auth.routes";
 import { BaseHandler } from "../base/base-handler";
 import { UserRepository } from "../repositories/user.repository";
@@ -16,6 +18,10 @@ import {
 } from "@/lib/jwt";
 import { getCookie, setCookie } from "hono/cookie";
 import { APIError } from "../helpers/api-error";
+import { sendPasswordResetEmail } from "@/lib/mailer";
+import { eq } from "drizzle-orm";
+import db from "@/db";
+import { users } from "@/db/schema";
 
 export class AuthHandler extends BaseHandler {
 	constructor() {
@@ -100,6 +106,33 @@ export class AuthHandler extends BaseHandler {
 				{ data: { token: newAccessToken } },
 				"Token refreshed successfully",
 			),
+			200,
+		);
+	};
+
+	forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (c) => {
+		const { email } = c.req.valid("json");
+		const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+
+		if (user) {
+			const resetToken = await this.repository.setPasswordResetToken(user.id);
+			await sendPasswordResetEmail(user.email, resetToken);
+		}
+
+		return c.json(
+			this.buildSuccessResponse(
+				null,
+				"If an account with that email exists, a password reset link has been sent.",
+			),
+			200,
+		);
+	};
+
+	resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
+		const { token, newPassword } = c.req.valid("json");
+		await this.repository.resetPassword(token, newPassword);
+		return c.json(
+			this.buildSuccessResponse(null, "Password has been reset successfully."),
 			200,
 		);
 	};

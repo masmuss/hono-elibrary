@@ -36,8 +36,8 @@ async function seedRoles() {
 afterAll(async () => {
     await clearDatabase();
 
-    if (redisClient.connected === true) {
-        redisClient.close();
+    if (redisClient.status === 'ready') {
+        redisClient.disconnect();
         console.log('Redis client disconnected.');
     }
 

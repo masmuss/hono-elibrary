@@ -1,7 +1,8 @@
+import { createHash, randomBytes } from "node:crypto";
 import { roles, users } from "@/db/schema";
 import { UserRole } from "@/lib/constants/enums/user-roles.enum";
 import { randomUUIDv7 } from "bun";
-import { desc, eq, or } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Register } from "../types/auth";
 import type { User, UserInsert, UserUpdate } from "../types/user";
@@ -146,6 +147,53 @@ export class UserRepository extends SoftDeleteMixin {
 				updatedAt: new Date(),
 			})
 			.where(eq(users.id, userId));
+
+		return true;
+	}
+
+	async setPasswordResetToken(userId: string): Promise<string> {
+		const resetToken = randomBytes(32).toString("hex");
+		const hashedToken = createHash("sha256").update(resetToken).digest("hex");
+		const expires = new Date(Date.now() + 3600000);
+
+		await this.db
+			.update(users)
+			.set({
+				passwordResetToken: hashedToken,
+				passwordResetExpires: expires,
+			})
+			.where(eq(users.id, userId));
+
+		return resetToken;
+	}
+
+	async resetPassword(token: string, newPassword_param: string): Promise<boolean> {
+		const hashedToken = createHash("sha256").update(token).digest("hex");
+
+		const user = await this.db.query.users.findFirst({
+			where: and(
+				eq(users.passwordResetToken, hashedToken),
+				sql`password_reset_expires > NOW()`
+			),
+		});
+
+		if (!user) {
+			throw new APIError(400, "Password reset token is invalid or has expired.", "INVALID_TOKEN");
+		}
+
+		const newSalt = randomUUIDv7();
+		const newHashedPassword = await Bun.password.hash(newPassword_param + newSalt);
+
+		await this.db
+			.update(users)
+			.set({
+				password: newHashedPassword,
+				salt: newSalt,
+				passwordResetToken: null,
+				passwordResetExpires: null,
+				updatedAt: new Date(),
+			})
+			.where(eq(users.id, user.id));
 
 		return true;
 	}
