@@ -32,10 +32,13 @@ export const registerSchema = z.object({
 
 export const changePasswordSchema = z.object({
 	currentPassword: z.string().min(1, "Current password is required"),
-	newPassword: z.string().min(8, "New password must be at least 8 characters long").openapi({
-		description: "Your new, secure password",
-		example: "newSecurePassword123",
-	}),
+	newPassword: z
+		.string()
+		.min(8, "New password must be at least 8 characters long")
+		.openapi({
+			description: "Your new, secure password",
+			example: "newSecurePassword123",
+		}),
 });
 
 export const authHeadersSchema = z

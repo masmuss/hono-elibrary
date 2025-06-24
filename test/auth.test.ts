@@ -208,6 +208,67 @@ describe('Auth Endpoints', () => {
         });
     });
 
+    describe("POST /api/auth/refresh", () => {
+        let refreshToken: string;
+        let validUser: User;
+
+        beforeEach(async () => {
+            const { user, password } = await createTestUser(UserRole.MEMBER, "password123");
+            validUser = user;
+
+            const res = await app.request("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: user.username, password: password }),
+            });
+
+            const setCookieHeader = res.headers.get("Set-Cookie") || "";
+
+            const match = setCookieHeader.match(/refreshToken=([^;]+)/);
+            if (match) {
+                refreshToken = match[1];
+            }
+        });
+
+        it("should issue a new access token with a valid refresh token", async () => {
+            expect(refreshToken).toBeString();
+
+            const res = await app.request("/api/auth/refresh", {
+                method: "POST",
+                headers: {
+                    "Cookie": `refreshToken=${refreshToken}`
+                }
+            });
+
+            expect(res.status).toBe(200);
+            const body = await res.json() as ApiSuccessResponse<{ token: string }>;
+            expect(body.data.token).toBeString();
+        });
+
+        it("should fail if refresh token is invalid", async () => {
+            const res = await app.request("/api/auth/refresh", {
+                method: "POST",
+                headers: {
+                    "Cookie": "refreshToken=this.is.an.invalid.token"
+                }
+            });
+
+            expect(res.status).toBe(401);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("REFRESH_TOKEN_INVALID");
+        });
+
+        it("should fail if refresh token cookie is missing", async () => {
+            const res = await app.request("/api/auth/refresh", {
+                method: "POST",
+            });
+
+            expect(res.status).toBe(401);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("REFRESH_TOKEN_MISSING");
+        });
+    });
+
     describe('GET /api/auth/profile', () => {
         let testUser: any;
         let testToken: string;

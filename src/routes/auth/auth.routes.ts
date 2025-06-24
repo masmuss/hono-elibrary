@@ -47,6 +47,20 @@ export class AuthRoutes extends BaseRoutes {
 		},
 	});
 
+	refresh = createRoute({
+		tags: ["Auth"],
+		description: "Get a new access token using a refresh token",
+		path: "/auth/refresh",
+		method: "post",
+		responses: {
+			200: this.successResponse(
+				loginSuccessResponse,
+				"Token refreshed successfully",
+			),
+			401: this.errorResponse("Unauthorized"),
+		},
+	});
+
 	profile = createRoute({
 		tags: ["Auth"],
 		description: "Get user profile",
@@ -72,7 +86,10 @@ export class AuthRoutes extends BaseRoutes {
 		method: "put",
 		request: {
 			headers: authHeadersSchema,
-			body: jsonContentRequired(changePasswordSchema, "Change password payload"),
+			body: jsonContentRequired(
+				changePasswordSchema,
+				"Change password payload",
+			),
 		},
 		middleware: [authMiddleware],
 		responses: {
@@ -101,6 +118,7 @@ export class AuthRoutes extends BaseRoutes {
 
 export type RegisterRoute = typeof AuthRoutes.prototype.register;
 export type LoginRoute = typeof AuthRoutes.prototype.login;
+export type RefreshTokenRoute = typeof AuthRoutes.prototype.refresh;
 export type ProfileRoute = typeof AuthRoutes.prototype.profile;
 export type ChangePasswordRoute = typeof AuthRoutes.prototype.changePassword;
 export type LogoutRoute = typeof AuthRoutes.prototype.logout;

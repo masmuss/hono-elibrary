@@ -97,6 +97,16 @@ export class UserRepository extends SoftDeleteMixin {
 		return user;
 	}
 
+	async updateRefreshToken(
+		userId: string,
+		token: string | null,
+	): Promise<void> {
+		await this.db
+			.update(users)
+			.set({ refreshToken: token })
+			.where(eq(users.id, userId));
+	}
+
 	async changePassword(
 		userId: string,
 		currentPassword_param: string,
@@ -116,11 +126,17 @@ export class UserRepository extends SoftDeleteMixin {
 		);
 
 		if (!isCurrentPasswordValid) {
-			throw new APIError(400, "The current password you entered is incorrect.", "INVALID_CURRENT_PASSWORD");
+			throw new APIError(
+				400,
+				"The current password you entered is incorrect.",
+				"INVALID_CURRENT_PASSWORD",
+			);
 		}
 
 		const newSalt = randomUUIDv7();
-		const newHashedPassword = await Bun.password.hash(newPassword_param + newSalt);
+		const newHashedPassword = await Bun.password.hash(
+			newPassword_param + newSalt,
+		);
 
 		await this.db
 			.update(users)

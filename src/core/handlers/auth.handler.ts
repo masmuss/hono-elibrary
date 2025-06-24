@@ -1,15 +1,21 @@
-import envRuntime from "@/config/env-runtime";
 import type { AppRouteHandler } from "@/lib/types";
 import type {
 	ChangePasswordRoute,
 	LoginRoute,
 	LogoutRoute,
 	ProfileRoute,
+	RefreshTokenRoute,
 	RegisterRoute,
 } from "@/routes/auth/auth.routes";
-import { sign } from "hono/jwt";
 import { BaseHandler } from "../base/base-handler";
 import { UserRepository } from "../repositories/user.repository";
+import {
+	generateAccessToken,
+	generateRefreshToken,
+	verifyRefreshToken,
+} from "@/lib/jwt";
+import { getCookie, setCookie } from "hono/cookie";
+import { APIError } from "../helpers/api-error";
 
 export class AuthHandler extends BaseHandler {
 	constructor() {
@@ -31,15 +37,69 @@ export class AuthHandler extends BaseHandler {
 
 		const { id, name, username, role } = user;
 
-		const token = await sign(
-			{ id, username, name, role: role.name },
-			envRuntime.JWT_SECRET,
-		);
+		const accessToken: string = await generateAccessToken(user);
+		const refreshToken: string = await generateRefreshToken(user);
 
-		const responseData = { id, name, username, token };
+		const responseData = { id, name, username, token: accessToken };
+
+		await this.repository.updateRefreshToken(id, refreshToken);
+
+		setCookie(c, "refreshToken", refreshToken, {
+			httpOnly: true,
+			secure: c.env.NODE_ENV === "production",
+			sameSite: "Lax",
+			path: "/",
+			maxAge: 7 * 24 * 60 * 60,
+		});
 
 		return c.json(
 			this.buildSuccessResponse({ data: responseData }, "Login successful"),
+			200,
+		);
+	};
+
+	refreshToken: AppRouteHandler<RefreshTokenRoute> = async (c) => {
+		const tokenFromCookie = getCookie(c, "refreshToken");
+
+		if (!tokenFromCookie) {
+			throw new APIError(
+				401,
+				"Refresh token not found",
+				"REFRESH_TOKEN_MISSING",
+			);
+		}
+
+		const decoded = await verifyRefreshToken(tokenFromCookie);
+
+		if (!decoded || !decoded.id) {
+			throw new APIError(
+				401,
+				"Invalid refresh token payload",
+				"REFRESH_TOKEN_INVALID",
+			);
+		}
+
+		const user = await this.repository.byId(decoded.id);
+
+		if (!user.data || user.data.refreshToken !== tokenFromCookie) {
+			throw new APIError(
+				401,
+				"Refresh token has been revoked or is invalid",
+				"REFRESH_TOKEN_REVOKED",
+			);
+		}
+
+		const newAccessToken = await generateAccessToken({
+			id: user.data.id,
+			name: user.data.name,
+			role: user.data.role.name,
+		});
+
+		return c.json(
+			this.buildSuccessResponse(
+				{ data: { token: newAccessToken } },
+				"Token refreshed successfully",
+			),
 			200,
 		);
 	};
@@ -72,7 +132,12 @@ export class AuthHandler extends BaseHandler {
 	};
 
 	logout: AppRouteHandler<LogoutRoute> = async (c) => {
-		c.set("user", null);
+		const user = c.get("user");
+		if (user) {
+			await this.repository.updateRefreshToken(user.id, null);
+		}
+
+		setCookie(c, "refreshToken", "", { maxAge: 0 });
 		return c.json(this.buildSuccessResponse(null, "Logout successful"), 200);
 	};
 }
