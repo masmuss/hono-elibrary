@@ -15,6 +15,7 @@ import { LoanStatus } from "@/lib/constants/enums/loan-status.enum";
 import type { Loan } from "@/core/types/loan";
 import type { Member } from "@/core/types/member";
 import { ApiErrorResponse, ApiSuccessResponse } from "./types";
+import { Category } from "@/core/types/category";
 
 type LoanResponse = {
     book: Book;
@@ -35,6 +36,7 @@ describe("Loan Endpoints", () => {
     let memberUser: User;
     let testMember: Member;
     let testBook: Book;
+    let testCategory: Category;
 
     beforeEach(async () => {
         const admin = (await createTestUser(UserRole.ADMIN)).user;
@@ -47,7 +49,7 @@ describe("Loan Endpoints", () => {
         librarianToken = await generateAuthToken({ id: librarianUser.id, role: UserRole.LIBRARIAN });
         memberToken = await generateAuthToken({ id: memberUser.id, role: UserRole.MEMBER });
 
-        const testCategory = await createTestCategory();
+        testCategory = await createTestCategory();
         testBook = await createTestBook(testCategory.id);
     });
 
@@ -86,6 +88,31 @@ describe("Loan Endpoints", () => {
             expect(body.success).toBeFalse();
             expect(body.error.code).toBe("LOAN_ACTIVE_EXISTS");
             expect(body.error.message).toContain("Member is already borrowing this book.");
+        });
+
+        it("should return 400 when member tries to borrow more than the loan limit", async () => {
+            const book1 = await createTestBook(testCategory.id);
+            const book2 = await createTestBook(testCategory.id);
+            const book3 = await createTestBook(testCategory.id);
+            const book4 = await createTestBook(testCategory.id);
+
+            await createTestLoan(testMember.id, book1.id, LoanStatus.APPROVED);
+            await createTestLoan(testMember.id, book2.id, LoanStatus.APPROVED);
+            await createTestLoan(testMember.id, book3.id, LoanStatus.APPROVED);
+
+            const res = await app.request("/api/loans", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${memberToken}`,
+                },
+                body: JSON.stringify({ memberId: testMember.id, bookId: book4.id }),
+            });
+
+            expect(res.status).toBe(400);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("LOAN_LIMIT_REACHED");
+            expect(body.error.message).toContain("Loan limit reached");
         });
 
         it("should return 403 for an ADMIN trying to create a loan", async () => {
