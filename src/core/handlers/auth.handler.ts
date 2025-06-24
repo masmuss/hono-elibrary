@@ -1,6 +1,7 @@
 import envRuntime from "@/config/env-runtime";
 import type { AppRouteHandler } from "@/lib/types";
 import type {
+	ChangePasswordRoute,
 	LoginRoute,
 	LogoutRoute,
 	ProfileRoute,
@@ -50,6 +51,22 @@ export class AuthHandler extends BaseHandler {
 				{ data: user },
 				"User profile retrieved successfully",
 			),
+			200,
+		);
+	};
+
+	changePassword: AppRouteHandler<ChangePasswordRoute> = async (c) => {
+		const user = c.get("user");
+		const body = c.req.valid("json");
+
+		await this.repository.changePassword(
+			user.id,
+			body.currentPassword,
+			body.newPassword,
+		);
+
+		return c.json(
+			this.buildSuccessResponse(null, "Password updated successfully"),
 			200,
 		);
 	};

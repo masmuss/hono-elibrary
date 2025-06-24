@@ -97,6 +97,43 @@ export class UserRepository extends SoftDeleteMixin {
 		return user;
 	}
 
+	async changePassword(
+		userId: string,
+		currentPassword_param: string,
+		newPassword_param: string,
+	): Promise<boolean> {
+		const user = await this.db.query.users.findFirst({
+			where: eq(users.id, userId),
+		});
+
+		if (!user) {
+			throw new APIError(404, "User not found", "USER_NOT_FOUND");
+		}
+
+		const isCurrentPasswordValid = await Bun.password.verify(
+			currentPassword_param + user.salt,
+			user.password,
+		);
+
+		if (!isCurrentPasswordValid) {
+			throw new APIError(400, "The current password you entered is incorrect.", "INVALID_CURRENT_PASSWORD");
+		}
+
+		const newSalt = randomUUIDv7();
+		const newHashedPassword = await Bun.password.hash(newPassword_param + newSalt);
+
+		await this.db
+			.update(users)
+			.set({
+				password: newHashedPassword,
+				salt: newSalt,
+				updatedAt: new Date(),
+			})
+			.where(eq(users.id, userId));
+
+		return true;
+	}
+
 	async getAllUsers(filter: Filter) {
 		const query = this.db
 			.select({

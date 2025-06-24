@@ -269,6 +269,76 @@ describe('Auth Endpoints', () => {
         });
     });
 
+    describe("PUT /api/auth/change-password", () => {
+        let testUser: any;
+        let plainPassword = "password123";
+        let userToken: string;
+
+        beforeEach(async () => {
+            const { user, password } = await createTestUser(UserRole.MEMBER, plainPassword);
+            testUser = user;
+            userToken = await generateAuthToken({ id: user.id, role: UserRole.MEMBER });
+        });
+
+        it("should allow a logged-in user to change their password", async () => {
+            const newPassword = "new-strong-password-456";
+            const res = await app.request("/api/auth/change-password", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${userToken}`,
+                },
+                body: JSON.stringify({
+                    currentPassword: plainPassword,
+                    newPassword: newPassword,
+                }),
+            });
+
+            expect(res.status).toBe(200);
+
+            const loginWithNewPasswordRes = await app.request("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username: testUser.username, password: newPassword }),
+            });
+            expect(loginWithNewPasswordRes.status).toBe(200);
+        });
+
+        it("should return 400 if the current password is incorrect", async () => {
+            const res = await app.request("/api/auth/change-password", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${userToken}`,
+                },
+                body: JSON.stringify({
+                    currentPassword: "this-is-a-wrong-password",
+                    newPassword: "any-new-password",
+                }),
+            });
+
+            expect(res.status).toBe(400);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("INVALID_CURRENT_PASSWORD");
+        });
+
+        it("should return 422 if the new password is too short", async () => {
+            const res = await app.request("/api/auth/change-password", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${userToken}`,
+                },
+                body: JSON.stringify({
+                    currentPassword: plainPassword,
+                    newPassword: "short",
+                }),
+            });
+
+            expect(res.status).toBe(422);
+        });
+    });
+
     describe('POST /api/auth/logout', () => {
         let testToken: string;
 
