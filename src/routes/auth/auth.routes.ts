@@ -69,7 +69,10 @@ export class AuthRoutes extends BaseRoutes {
 		path: "/auth/forgot-password",
 		method: "post",
 		request: {
-			body: jsonContentRequired(forgotPasswordSchema, "Forgot password payload"),
+			body: jsonContentRequired(
+				forgotPasswordSchema,
+				"Forgot password payload",
+			),
 		},
 		responses: {
 			200: this.successResponse(z.null(), "Password reset link sent"),
@@ -87,7 +90,9 @@ export class AuthRoutes extends BaseRoutes {
 		},
 		responses: {
 			200: this.successResponse(z.null(), "Password has been reset"),
-			400: this.errorResponse("Bad Request (e.g., token is invalid or expired)"),
+			400: this.errorResponse(
+				"Bad Request (e.g., token is invalid or expired)",
+			),
 			422: this.errorResponse("Validation Error"),
 		},
 	});

@@ -32,7 +32,7 @@ export const loginSuccessResponse = z.object({
 export const forgotPasswordSchema = z.object({
 	email: z.string().email("Please enter a valid email address.").openapi({
 		description: "Email address of the user requesting password reset",
-		example: "john_doe@mail.com"
+		example: "john_doe@mail.com",
 	}),
 });
 
@@ -41,10 +41,13 @@ export const resetPasswordSchema = z.object({
 		description: "Password reset token",
 		example: "1234567890abcdef1234567890abcdef",
 	}),
-	newPassword: z.string().min(8, "Password must be at least 8 characters long.").openapi({
-		description: "New password for the user",
-		example: "NewPassword123!",
-	}),
+	newPassword: z
+		.string()
+		.min(8, "Password must be at least 8 characters long.")
+		.openapi({
+			description: "New password for the user",
+			example: "NewPassword123!",
+		}),
 });
 
 export const profileSuccessResponse = z.object({

@@ -10,9 +10,9 @@ async function clearDatabase() {
         await db.delete(schema.loans);
         await db.delete(schema.books);
         await db.delete(schema.members);
-        await db.delete(schema.users);
+        // await db.delete(schema.users);
         await db.delete(schema.categories);
-        await db.delete(schema.roles);
+        // await db.delete(schema.roles);
     } catch (error) {
         throw error;
     }

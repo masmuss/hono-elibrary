@@ -112,7 +112,9 @@ export class AuthHandler extends BaseHandler {
 
 	forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (c) => {
 		const { email } = c.req.valid("json");
-		const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+		const user = await db.query.users.findFirst({
+			where: eq(users.email, email),
+		});
 
 		if (user) {
 			const resetToken = await this.repository.setPasswordResetToken(user.id);

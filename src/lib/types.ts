@@ -16,7 +16,7 @@ export type AppRouteHandler<R extends RouteConfig> = RouteHandler<
 	AppBindings
 >;
 
-declare module 'hono' {
+declare module "hono" {
 	interface ContextVariableMap {
 		dbWithLogger: ReturnType<typeof createDrizzle>;
 	}

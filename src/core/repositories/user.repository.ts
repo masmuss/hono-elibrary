@@ -167,22 +167,31 @@ export class UserRepository extends SoftDeleteMixin {
 		return resetToken;
 	}
 
-	async resetPassword(token: string, newPassword_param: string): Promise<boolean> {
+	async resetPassword(
+		token: string,
+		newPassword_param: string,
+	): Promise<boolean> {
 		const hashedToken = createHash("sha256").update(token).digest("hex");
 
 		const user = await this.db.query.users.findFirst({
 			where: and(
 				eq(users.passwordResetToken, hashedToken),
-				sql`password_reset_expires > NOW()`
+				sql`password_reset_expires > NOW()`,
 			),
 		});
 
 		if (!user) {
-			throw new APIError(400, "Password reset token is invalid or has expired.", "INVALID_TOKEN");
+			throw new APIError(
+				400,
+				"Password reset token is invalid or has expired.",
+				"INVALID_TOKEN",
+			);
 		}
 
 		const newSalt = randomUUIDv7();
-		const newHashedPassword = await Bun.password.hash(newPassword_param + newSalt);
+		const newHashedPassword = await Bun.password.hash(
+			newPassword_param + newSalt,
+		);
 
 		await this.db
 			.update(users)
