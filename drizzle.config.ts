@@ -11,5 +11,6 @@ export default defineConfig({
 		password: env.POSTGRES_PASSWORD,
 		port: Number.parseInt(env.POSTGRES_PORT),
 		database: env.POSTGRES_DB,
+		ssl: false
 	},
 });
