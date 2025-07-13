@@ -310,7 +310,7 @@ export class UserRepository extends SoftDeleteMixin {
 		const user = await db.query.users.findFirst({
 			where: eq(users.id, id),
 			with: { role: { columns: { name: true } } },
-			columns: { password: false, salt: false, refreshToken: true },
+			columns: { password: false, salt: false, passwordResetToken: false, passwordResetExpires: false },
 		});
 
 		if (!user) {

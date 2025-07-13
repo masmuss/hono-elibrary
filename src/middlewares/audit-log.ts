@@ -46,8 +46,6 @@ export const auditLog = (options: AuditLogOptions): MiddlewareHandler => {
 	};
 };
 
-// kita perlu modifikasi handler agar bisa menggunakan db dari context
-// Buat tipe baru di src/lib/types.ts
 declare module "hono" {
 	interface ContextVariableMap {
 		dbWithLogger: ReturnType<typeof createDrizzle>;

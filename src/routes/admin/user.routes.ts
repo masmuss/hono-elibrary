@@ -11,7 +11,9 @@ import {
 	updateUserAsAdminSchema,
 } from "@/core/validations/admin.user.validation";
 import { authHeadersSchema } from "@/core/validations/auth.validation";
+import { UserManagementEvent } from "@/lib/constants/enums/audit-log-events.enum";
 import { UserRole } from "@/lib/constants/enums/user-roles.enum";
+import { auditLog } from "@/middlewares/audit-log";
 import { authMiddleware } from "@/middlewares/auth";
 import { authorizeRole } from "@/middlewares/authorization";
 import { createRoute, z } from "@hono/zod-openapi";
@@ -26,7 +28,11 @@ export class AdminUserRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			query: getAllUsersQuerySchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.ADMIN]),
+			auditLog({ action: UserManagementEvent.ADMIN_GET_ALL_USERS })
+		],
 		responses: {
 			200: this.successResponse(
 				getAllUsersSuccessResponse,
@@ -46,7 +52,11 @@ export class AdminUserRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			body: jsonContentRequired(createUserAsAdminSchema, "New user payload"),
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.ADMIN]),
+			auditLog({ action: UserManagementEvent.ADMIN_CREATE_USER })
+		],
 		responses: {
 			201: this.successResponse(
 				userResponseSchema.omit({ role: true, createdAt: true }),
@@ -66,7 +76,11 @@ export class AdminUserRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: UUIDParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.ADMIN]),
+			auditLog({ action: UserManagementEvent.ADMIN_GET_USER_BY_ID })
+		],
 		responses: {
 			200: this.successResponse(
 				userResponseSchema,
@@ -88,7 +102,11 @@ export class AdminUserRoutes extends BaseRoutes {
 			params: UUIDParamSchema,
 			body: jsonContentRequired(updateUserAsAdminSchema, "User update payload"),
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.ADMIN]),
+			auditLog({ action: UserManagementEvent.ADMIN_UPDATE_USER })
+		],
 		responses: {
 			200: this.successResponse(
 				userResponseSchema,
@@ -110,7 +128,11 @@ export class AdminUserRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: UUIDParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.ADMIN]),
+			auditLog({ action: UserManagementEvent.ADMIN_DELETE_USER })
+		],
 		responses: {
 			200: this.successResponse(z.null(), "User deleted successfully"),
 			403: this.errorResponse("Forbidden"),
