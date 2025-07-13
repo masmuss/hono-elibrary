@@ -13,6 +13,8 @@ import {
 	loginSchema,
 	registerSchema,
 } from "@/core/validations/auth.validation";
+import { AuthEvent } from "@/lib/constants/enums/audit-log-events.enum";
+import { auditLog } from "@/middlewares/audit-log";
 import { authMiddleware } from "@/middlewares/auth";
 import { createRoute, z } from "@hono/zod-openapi";
 
@@ -25,6 +27,7 @@ export class AuthRoutes extends BaseRoutes {
 		request: {
 			body: jsonContentRequired(loginSchema, "Login schema"),
 		},
+		middleware: [auditLog({ action: AuthEvent.USER_LOGIN })],
 		responses: {
 			200: this.successResponse(loginSuccessResponse, "Login successful"),
 			401: this.errorResponse("Invalid credentials"),
@@ -39,6 +42,7 @@ export class AuthRoutes extends BaseRoutes {
 		request: {
 			body: jsonContentRequired(registerSchema, "Register schema"),
 		},
+		middleware: [auditLog({ action: AuthEvent.USER_REGISTER })],
 		responses: {
 			201: this.successResponse(
 				registerSuccessResponse,
@@ -54,6 +58,7 @@ export class AuthRoutes extends BaseRoutes {
 		description: "Get a new access token using a refresh token",
 		path: "/auth/refresh",
 		method: "post",
+		middleware: [auditLog({ action: AuthEvent.TOKEN_REFRESH })],
 		responses: {
 			200: this.successResponse(
 				loginSuccessResponse,
@@ -74,6 +79,7 @@ export class AuthRoutes extends BaseRoutes {
 				"Forgot password payload",
 			),
 		},
+		middleware: [auditLog({ action: AuthEvent.PASSWORD_FORGOT_REQUEST })],
 		responses: {
 			200: this.successResponse(z.null(), "Password reset link sent"),
 			422: this.errorResponse("Validation Error"),
@@ -88,6 +94,7 @@ export class AuthRoutes extends BaseRoutes {
 		request: {
 			body: jsonContentRequired(resetPasswordSchema, "Reset password payload"),
 		},
+		middleware: [auditLog({ action: AuthEvent.PASSWORD_RESET })],
 		responses: {
 			200: this.successResponse(z.null(), "Password has been reset"),
 			400: this.errorResponse(
@@ -105,7 +112,10 @@ export class AuthRoutes extends BaseRoutes {
 		request: {
 			headers: authHeadersSchema,
 		},
-		middleware: [authMiddleware],
+		middleware: [
+			authMiddleware,
+			auditLog({ action: AuthEvent.USER_PROFILE_VIEW }),
+		],
 		responses: {
 			200: this.successResponse(
 				profileSuccessResponse,
@@ -127,7 +137,10 @@ export class AuthRoutes extends BaseRoutes {
 				"Change password payload",
 			),
 		},
-		middleware: [authMiddleware],
+		middleware: [
+			authMiddleware,
+			auditLog({ action: AuthEvent.PASSWORD_CHANGE }),
+		],
 		responses: {
 			200: this.successResponse(z.null(), "Password updated successfully"),
 			400: this.errorResponse("Bad Request (e.g., incorrect current password)"),
@@ -144,7 +157,7 @@ export class AuthRoutes extends BaseRoutes {
 		request: {
 			headers: authHeadersSchema,
 		},
-		middleware: [authMiddleware],
+		middleware: [authMiddleware, auditLog({ action: AuthEvent.USER_LOGOUT })],
 		responses: {
 			200: this.successResponse(z.null(), "User logged out successfully"),
 			401: this.errorResponse("Unauthorized"),
