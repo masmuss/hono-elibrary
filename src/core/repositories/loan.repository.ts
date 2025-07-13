@@ -18,7 +18,7 @@ export class LoanRepository extends SoftDeleteMixin {
 	private async getLoanDetails(
 		loanId: string,
 		trx?: any,
-		dbInstance?: DbInstance
+		dbInstance?: DbInstance,
 	): Promise<LoanQueryResult> {
 		const db = trx || dbInstance || this.db;
 		return await db.query.loans.findFirst({
@@ -115,7 +115,11 @@ export class LoanRepository extends SoftDeleteMixin {
 		return { data: query };
 	}
 
-	async getLoansByMemberId(memberId: string, filter: Filter, dbInstance?: DbInstance) {
+	async getLoansByMemberId(
+		memberId: string,
+		filter: Filter,
+		dbInstance?: DbInstance,
+	) {
 		const db = dbInstance || this.db;
 		const query = db.query.loans.findMany({
 			where: and(eq(loans.memberId, memberId), isNull(loans.deletedAt)),
@@ -166,7 +170,11 @@ export class LoanRepository extends SoftDeleteMixin {
 		return !!activeLoan;
 	}
 
-	async createLoan(memberId: string, bookId: number, dbInstance?: DbInstance): Promise<LoanQueryResult> {
+	async createLoan(
+		memberId: string,
+		bookId: number,
+		dbInstance?: DbInstance,
+	): Promise<LoanQueryResult> {
 		const db = dbInstance || this.db;
 		const activeLoansCountResult = await db
 			.select({ value: count() })
@@ -259,7 +267,7 @@ export class LoanRepository extends SoftDeleteMixin {
 	async approveLoan(
 		loanId: string,
 		librarianId: string,
-		dbInstance?: DbInstance
+		dbInstance?: DbInstance,
 	): Promise<{ data: LoanQueryResult }> {
 		const db = dbInstance || this.db;
 		return await db.transaction(async (trx) => {
@@ -295,7 +303,7 @@ export class LoanRepository extends SoftDeleteMixin {
 	async rejectLoan(
 		loanId: string,
 		librarianId: string,
-		dbInstance?: DbInstance
+		dbInstance?: DbInstance,
 	): Promise<{ data: LoanQueryResult }> {
 		const db = dbInstance || this.db;
 		return await db.transaction(async (trx) => {
@@ -329,7 +337,10 @@ export class LoanRepository extends SoftDeleteMixin {
 		});
 	}
 
-	async returnLoan(loanId: string, dbInstance?: DbInstance): Promise<LoanQueryResult> {
+	async returnLoan(
+		loanId: string,
+		dbInstance?: DbInstance,
+	): Promise<LoanQueryResult> {
 		const db = dbInstance || this.db;
 		return await db.transaction(async (trx) => {
 			const loan = await trx.query.loans.findFirst({

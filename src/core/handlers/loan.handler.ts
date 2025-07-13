@@ -20,6 +20,7 @@ export class LoanHandler extends BaseHandler {
 	getMyLoans: AppRouteHandler<MyLoans> = async (c) => {
 		const user = c.get("user");
 		const filter = c.req.valid("query");
+		const db = c.get("dbWithLogger") || this.repository.db;
 
 		const memberRepo = new MemberRepository();
 		const member = await memberRepo.findByUserId(user.id);
@@ -32,7 +33,11 @@ export class LoanHandler extends BaseHandler {
 			);
 		}
 
-		const loans = await this.repository.getLoansByMemberId(member.id, filter);
+		const loans = await this.repository.getLoansByMemberId(
+			member.id,
+			filter,
+			db,
+		);
 		return c.json(
 			this.buildSuccessResponse(loans, "User's loans retrieved successfully"),
 			200,
@@ -52,7 +57,11 @@ export class LoanHandler extends BaseHandler {
 	createLoan: AppRouteHandler<LoanCreate> = async (c) => {
 		const body = c.req.valid("json");
 		const db = c.get("dbWithLogger") || this.repository.db;
-		const loan = await this.repository.createLoan(body.memberId, body.bookId, db);
+		const loan = await this.repository.createLoan(
+			body.memberId,
+			body.bookId,
+			db,
+		);
 		return c.json(
 			this.buildSuccessResponse({ data: loan }, "Loan created successfully"),
 			201,

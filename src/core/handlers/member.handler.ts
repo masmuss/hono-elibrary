@@ -13,7 +13,8 @@ export class MemberHandler extends BaseHandler {
 
 	getProfile: AppRouteHandler<GetMyProfile> = async (c) => {
 		const user = c.get("user");
-		const profile = await this.repository.getProfileByUserId(user.id);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const profile = await this.repository.getProfileByUserId(user.id, db);
 		return c.json(
 			this.buildSuccessResponse(
 				{ data: profile },
@@ -26,7 +27,12 @@ export class MemberHandler extends BaseHandler {
 	updateProfile: AppRouteHandler<UpdateMyProfile> = async (c) => {
 		const user = c.get("user");
 		const body = c.req.valid("json");
-		const updatedProfile = await this.repository.updateProfile(user.id, body);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const updatedProfile = await this.repository.updateProfile(
+			user.id,
+			body,
+			db,
+		);
 		return c.json(
 			this.buildSuccessResponse(updatedProfile, "Profile updated successfully"),
 			200,

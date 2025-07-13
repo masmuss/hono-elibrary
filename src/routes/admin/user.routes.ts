@@ -31,7 +31,7 @@ export class AdminUserRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.ADMIN]),
-			auditLog({ action: UserManagementEvent.ADMIN_GET_ALL_USERS })
+			auditLog({ action: UserManagementEvent.ADMIN_GET_ALL_USERS }),
 		],
 		responses: {
 			200: this.successResponse(
@@ -55,7 +55,7 @@ export class AdminUserRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.ADMIN]),
-			auditLog({ action: UserManagementEvent.ADMIN_CREATE_USER })
+			auditLog({ action: UserManagementEvent.ADMIN_CREATE_USER }),
 		],
 		responses: {
 			201: this.successResponse(
@@ -79,7 +79,7 @@ export class AdminUserRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.ADMIN]),
-			auditLog({ action: UserManagementEvent.ADMIN_GET_USER_BY_ID })
+			auditLog({ action: UserManagementEvent.ADMIN_GET_USER_BY_ID }),
 		],
 		responses: {
 			200: this.successResponse(
@@ -105,7 +105,7 @@ export class AdminUserRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.ADMIN]),
-			auditLog({ action: UserManagementEvent.ADMIN_UPDATE_USER })
+			auditLog({ action: UserManagementEvent.ADMIN_UPDATE_USER }),
 		],
 		responses: {
 			200: this.successResponse(
@@ -131,7 +131,7 @@ export class AdminUserRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.ADMIN]),
-			auditLog({ action: UserManagementEvent.ADMIN_DELETE_USER })
+			auditLog({ action: UserManagementEvent.ADMIN_DELETE_USER }),
 		],
 		responses: {
 			200: this.successResponse(z.null(), "User deleted successfully"),

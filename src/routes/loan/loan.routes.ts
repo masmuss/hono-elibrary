@@ -31,7 +31,7 @@ export class LoanRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.ADMIN, UserRole.LIBRARIAN]),
-			auditLog({ action: LoanEvent.LOAN_GET_ALL })
+			auditLog({ action: LoanEvent.LOAN_GET_ALL }),
 		],
 		responses: {
 			200: this.successResponse(
