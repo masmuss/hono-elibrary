@@ -16,7 +16,8 @@ export class CategoryHandler extends BaseHandler {
 
 	getAllCategories: AppRouteHandler<GetAllCategories> = async (c) => {
 		const filter = c.req.valid("query");
-		const result = await this.repository.get(filter);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.get(filter, db);
 		return c.json(
 			this.buildSuccessResponse(result, "Categories retrieved successfully"),
 			200,
@@ -25,7 +26,8 @@ export class CategoryHandler extends BaseHandler {
 
 	getCategoryById: AppRouteHandler<GetCategoryById> = async (c) => {
 		const { id } = c.req.valid("param");
-		const result = await this.repository.byId(id);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.byId(id, db);
 		return c.json(
 			this.buildSuccessResponse(result, "Category retrieved successfully"),
 			200,
@@ -34,7 +36,8 @@ export class CategoryHandler extends BaseHandler {
 
 	createCategory: AppRouteHandler<CreateCategory> = async (c) => {
 		const body = c.req.valid("json");
-		const result = await this.repository.create(body);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.create(body, db);
 		return c.json(
 			this.buildSuccessResponse(result, "Category created successfully"),
 			201,
@@ -44,7 +47,8 @@ export class CategoryHandler extends BaseHandler {
 	updateCategory: AppRouteHandler<UpdateCategory> = async (c) => {
 		const { id } = c.req.valid("param");
 		const body = c.req.valid("json");
-		const result = await this.repository.update(id, body);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.update(id, body, db);
 		return c.json(
 			this.buildSuccessResponse(result, "Category updated successfully"),
 			200,
@@ -53,7 +57,8 @@ export class CategoryHandler extends BaseHandler {
 
 	deleteCategory: AppRouteHandler<DeleteCategory> = async (c) => {
 		const { id } = c.req.valid("param");
-		await this.repository.hardDelete(id);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		await this.repository.hardDelete(id, db);
 		return c.json(
 			this.buildSuccessResponse(null, "Category deleted successfully"),
 			200,

@@ -7,6 +7,7 @@ import { APIError } from "../helpers/api-error";
 import redisClient from "@/lib/redis";
 import { CacheKeys } from "@/lib/constants/cache-keys";
 import type { Category, CategoryInsert } from "../types/category";
+import type { DbInstance } from "../types/db";
 
 export class CategoryRepository extends SoftDeleteMixin {
 	constructor() {
@@ -23,7 +24,7 @@ export class CategoryRepository extends SoftDeleteMixin {
 		}
 	}
 
-	async get(filter: Filter): Promise<PaginatedData> {
+	async get(filter: Filter, dbInstance?: DbInstance): Promise<PaginatedData> {
 		const filtersBuilder = this.filterBuilder(filter);
 		const searchBuilder = filter.search
 			? this.searchBuilder(filter.search, ["name"])
@@ -45,7 +46,8 @@ export class CategoryRepository extends SoftDeleteMixin {
 			return JSON.parse(cachedData);
 		}
 
-		const query = this.db
+		const db = dbInstance || this.db;
+		const query = db
 			.select({
 				id: categories.id,
 				name: categories.name,
@@ -66,8 +68,9 @@ export class CategoryRepository extends SoftDeleteMixin {
 		return result;
 	}
 
-	async byId(id: number): Promise<{ data: Category }> {
-		const [result] = (await this.db
+	async byId(id: number, dbInstance?: DbInstance): Promise<{ data: Category }> {
+		const db = dbInstance || this.db;
+		const [result] = (await db
 			.select()
 			.from(this.table)
 			.where(
@@ -86,8 +89,12 @@ export class CategoryRepository extends SoftDeleteMixin {
 		return { data: result };
 	}
 
-	async create(data: CategoryInsert): Promise<{ data: Category } | null> {
-		const query = (await this.db
+	async create(
+		data: CategoryInsert,
+		dbInstance?: DbInstance,
+	): Promise<{ data: Category } | null> {
+		const db = dbInstance || this.db;
+		const query = (await db
 			.insert(this.table)
 			.values(data)
 			.returning()) as Category[];
@@ -107,8 +114,10 @@ export class CategoryRepository extends SoftDeleteMixin {
 	async update(
 		id: number,
 		data: Partial<CategoryInsert>,
+		dbInstance?: DbInstance,
 	): Promise<{ data: Category } | null> {
-		const [result] = (await this.db
+		const db = dbInstance || this.db;
+		const [result] = (await db
 			.update(this.table)
 			.set(data)
 			.where(eq(categories.id, id))
@@ -122,8 +131,12 @@ export class CategoryRepository extends SoftDeleteMixin {
 		return { data: result };
 	}
 
-	async hardDelete(id: number): Promise<{ data: Category }> {
-		const bookUsingCategory = await this.db.query.books.findFirst({
+	async hardDelete(
+		id: number,
+		dbInstance?: DbInstance,
+	): Promise<{ data: Category }> {
+		const db = dbInstance || this.db;
+		const bookUsingCategory = await db.query.books.findFirst({
 			where: eq(books.categoryId, id),
 		});
 		if (bookUsingCategory) {
@@ -133,7 +146,7 @@ export class CategoryRepository extends SoftDeleteMixin {
 				"CATEGORY_IN_USE",
 			);
 		}
-		const [result] = (await this.db
+		const [result] = (await db
 			.delete(this.table)
 			.where(eq(categories.id, id))
 			.returning()) as Category[];
