@@ -1,5 +1,5 @@
 import type { Repository } from "@/core/interfaces/repository.interface";
-import { books } from "@/db/schema";
+import { books, categories } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { PaginatedData } from "../base/types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
@@ -24,11 +24,11 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		const filtersBuilder = this.filterBuilder(filter);
 		const searchBuilder = filter.search
 			? this.searchBuilder(filter.search, [
-					"title",
-					"author",
-					"publisher",
-					"isbn",
-				])
+				"title",
+				"author",
+				"publisher",
+				"isbn",
+			])
 			: null;
 
 		const whereCondition = and(
@@ -90,11 +90,45 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		return result;
 	}
 
+	private async isIsbnExists(isbn: string, dbInstance?: DbInstance): Promise<boolean> {
+		const db = dbInstance || this.db;
+		const existingBook = await db.query.books.findFirst({
+			where: eq(books.isbn, isbn),
+		});
+		return !!existingBook;
+	}
+
+	private async isCategoryExists(categoryId: number, dbInstance?: DbInstance): Promise<boolean> {
+		const db = dbInstance || this.db;
+		const existingCategory = await db.query.categories.findFirst({
+			where: eq(categories.id, categoryId),
+		});
+		return !!existingCategory;
+	}
+
+
 	async create(
 		book: BookInsert,
 		dbInstance?: DbInstance,
 	): Promise<{ data: Book }> {
 		const db = dbInstance ?? this.db;
+
+		if (await this.isIsbnExists(book.isbn, db)) {
+			throw new APIError(
+				409,
+				"A book with this ISBN already exists.",
+				"BOOK_ALREADY_EXISTS",
+			);
+		}
+
+		if (!await this.isCategoryExists(book.categoryId, db)) {
+			throw new APIError(
+				404,
+				`Category with ID ${book.categoryId} not found.`,
+				"CATEGORY_NOT_FOUND",
+			);
+		}
+
 		const [query] = await db.insert(books).values(book).returning();
 		if (!query) {
 			throw new APIError(500, "Failed to create book record");

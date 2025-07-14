@@ -76,6 +76,7 @@ export class BookRoutes extends BaseRoutes {
 			),
 			401: this.errorResponse("Unauthorized"),
 			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("Category not found"),
 			422: this.errorResponse("Validation Error"),
 		},
 	});

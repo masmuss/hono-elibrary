@@ -51,6 +51,15 @@ describe("Book Endpoints", () => {
             expect(body.data.length).toBe(1);
             expect(body.page).toBe(1);
         });
+
+        it("should handle search query correctly", async () => {
+            const res = await app.request(`/api/books?search=${encodeURIComponent(testBook1.title)}`);
+            const body = await res.json() as ApiSuccessResponse<Book[]>;
+
+            expect(res.status).toBe(200);
+            expect(body.data).toBeArray();
+            expect(body.data.some(book => book.title.includes(testBook1.title))).toBe(true);
+        });
     });
 
     describe("GET /api/books/:id", () => {
@@ -159,6 +168,135 @@ describe("Book Endpoints", () => {
             expect(res.status).toBe(422);
             expect(body.error.code).toInclude("VALIDATION_ERROR");
             expect(body.error.message).toBe("The provided data is invalid.");
+        });
+
+        it("should return 409 for duplicate ISBN", async () => {
+            const duplicateData = { ...newBookData, isbn: testBook1.isbn };
+            const res = await app.request("/api/books", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify({ ...duplicateData, categoryId: testCategory.id }),
+            });
+
+            expect(res.status).toBe(409);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("BOOK_ALREADY_EXISTS");
+        });
+
+        it("should return 404 for non-existent category", async () => {
+            const res = await app.request("/api/books", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify({
+                    ...newBookData,
+                    isbn: "9783161484999",
+                    categoryId: 99999,
+                }),
+            });
+
+            expect(res.status).toBe(404);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("CATEGORY_NOT_FOUND");
+        });
+    });
+
+    describe("PUT /api/books/:id", () => {
+        let bookToUpdate: Book;
+        const updateData = {
+            title: "Updated Book Title",
+            author: "Updated Author",
+            synopsis: "Updated synopsis",
+            totalPages: 400,
+            publicationYear: 2024,
+            totalCopies: 15,
+            availableCopies: 12,
+        };
+
+        beforeEach(async () => {
+            bookToUpdate = await createTestBook(testCategory.id);
+        });
+
+        it("should allow a LIBRARIAN to update a book", async () => {
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify({ ...updateData, categoryId: testCategory.id }),
+            });
+
+            const body = await res.json() as ApiSuccessResponse<Book>;
+
+            expect(res.status).toBe(200);
+            expect(body.data.title).toBe(updateData.title);
+            expect(body.data.author).toBe(updateData.author);
+            expect(body.data.synopsis).toBe(updateData.synopsis);
+            expect(body.data.totalPages).toBe(updateData.totalPages);
+            expect(body.data.publicationYear).toBe(updateData.publicationYear);
+            expect(body.data.totalCopies).toBe(updateData.totalCopies);
+            expect(body.data.availableCopies).toBe(updateData.availableCopies);
+        });
+
+        it("should return 403 for a MEMBER user", async () => {
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${memberToken}`,
+                },
+                body: JSON.stringify(updateData),
+            });
+
+            expect(res.status).toBe(403);
+        });
+
+        it("should return 403 for an ADMIN user", async () => {
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${adminToken}`,
+                },
+                body: JSON.stringify(updateData),
+            });
+
+            expect(res.status).toBe(403);
+        });
+
+        it("should return 404 for non-existent book", async () => {
+            const res = await app.request("/api/books/99999", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify(updateData),
+            });
+
+            expect(res.status).toBe(404);
+        });
+
+        it("should return 422 for invalid update data", async () => {
+            const invalidData = { ...updateData, title: "" };
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify(invalidData),
+            });
+
+            expect(res.status).toBe(422);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toInclude("VALIDATION_ERROR");
         });
     });
 
