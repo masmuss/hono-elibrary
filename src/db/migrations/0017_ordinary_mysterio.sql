@@ -1,0 +1,1 @@
+ALTER TABLE "audit_logs" ADD COLUMN "correlation_id" varchar(255);

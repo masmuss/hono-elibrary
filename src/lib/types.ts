@@ -1,13 +1,14 @@
 import type { Environment } from "@/config/types";
 import type { createDrizzle } from "@/db";
 import type { OpenAPIHono, RouteConfig, RouteHandler } from "@hono/zod-openapi";
+import type { RequestIdVariables } from "hono/request-id";
 
 export interface AppBindings {
 	Bindings: Environment;
 	Variables: {
 		session: any;
 		user: any;
-	};
+	} & RequestIdVariables;
 }
 
 export type App = OpenAPIHono<AppBindings>;
