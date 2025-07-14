@@ -56,3 +56,7 @@ export enum MemberEvent {
 	MEMBER_UPDATE = "MEMBER_UPDATE",
 	MEMBER_DELETE = "MEMBER_DELETE",
 }
+
+export enum AdminEvent {
+	ADMIN_VIEW_AUDIT_LOGS = "ADMIN_VIEW_AUDIT_LOGS",
+}

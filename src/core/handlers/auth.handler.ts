@@ -45,8 +45,13 @@ export class AuthHandler extends BaseHandler {
 
 		const { id, name, username, role } = user;
 
-		const accessToken: string = await generateAccessToken(user);
-		const refreshToken: string = await generateRefreshToken(user);
+		const tokenPayload = {
+			id,
+			name,
+			role: role.name,
+		} as const;
+		const accessToken: string = await generateAccessToken(tokenPayload);
+		const refreshToken: string = await generateRefreshToken(tokenPayload);
 
 		const responseData = { id, name, username, token: accessToken };
 

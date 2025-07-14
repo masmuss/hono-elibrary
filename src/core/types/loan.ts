@@ -33,7 +33,6 @@ export type LoanQueryResult = {
 		} | null;
 	} | null;
 	librarian?: {
-		// Opsional karena tidak semua query membutuhkannya
 		name: string | null;
 		email: string;
 	} | null;
