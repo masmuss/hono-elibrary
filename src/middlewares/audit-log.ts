@@ -32,11 +32,13 @@ export const auditLog = (options: AuditLogOptions): MiddlewareHandler => {
 		} finally {
 			const queries = queryLogger.getQueries();
 
+			const isSuccess = !error && c.res.status >= 200 && c.res.status < 300;
+
 			const db = createDrizzle();
 			await db.insert(auditLogs).values({
 				userId: user ? user.id : null,
 				action: options.action,
-				status: error ? "FAILED" : "SUCCESS",
+				status: isSuccess ? "SUCCESS" : "FAILED",
 				payload: requestBody,
 				dbQuery: queries.join("\n---\n"),
 				ipAddress: ip,
