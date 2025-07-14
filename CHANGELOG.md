@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.5.0](https://github.com/masmuss/hono-elibrary/compare/v1.4.0...v1.5.0) (2025-07-14)
+
+
+### Features
+
+* add log viewer for log ([f632250](https://github.com/masmuss/hono-elibrary/commit/f6322503c197a6a028d292f0f80188f8811281a8))
+* **log:** add audit log for category module ([9bd8d7e](https://github.com/masmuss/hono-elibrary/commit/9bd8d7ee02799597903daade6dd4934d7f2fe0bc))
+* **log:** add audit log for loan module ([4423967](https://github.com/masmuss/hono-elibrary/commit/4423967f6b4ac3c04ac4073d5f8c983326cb2d08))
+* **log:** add audit log for user management module ([323b860](https://github.com/masmuss/hono-elibrary/commit/323b860475e8fc11b8f1188daa9d6a8de31459c4))
+* **log:** add audit-logs table and init log function ([c6ebd27](https://github.com/masmuss/hono-elibrary/commit/c6ebd277651e75121215aedac96d80b08d9af8e5))
+* **log:** implement audit log in auth module ([07b683e](https://github.com/masmuss/hono-elibrary/commit/07b683e72b39db6c811db3a5e2817a75a1e054f9))
+* **log:** implement audit log in book resource ([0afe6c2](https://github.com/masmuss/hono-elibrary/commit/0afe6c2960c32763f461869cfc96a44c11b7b0d2))
+* **log:** implement audit log in member module ([adeccc3](https://github.com/masmuss/hono-elibrary/commit/adeccc39ec96b03006d907972c0b6df5dc47411e))
+
+
+### Bug Fixes
+
+* **log:** add correlation id column for trace many activities with single request ([895e0d0](https://github.com/masmuss/hono-elibrary/commit/895e0d0c0e4f0d7a92d7caddb0e059fb40eab3d8))
+* **log:** fix status classification from api response ([6bd0fd2](https://github.com/masmuss/hono-elibrary/commit/6bd0fd2da3fbda4557ef9a6bd5172a161178677c))
+
 ## [1.4.0](https://github.com/masmuss/hono-elibrary/compare/v1.3.0...v1.4.0) (2025-06-24)
 
 
