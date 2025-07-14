@@ -1,0 +1,43 @@
+config:
+  target: "http://localhost:3000"
+  phases:
+    - duration: 30
+      arrivalRate: 5
+      name: "Warm-up Phase"
+    - duration: 60
+      arrivalRate: 20
+      name: "Peak Load Phase"
+  variables:
+    username:
+      - "{{ $randomString(10) }}" 
+    email:
+      - "{{ $randomString(8) }}@test.com" 
+    password:
+      - "securePassword123" 
+    name:
+      - "User {{ $randomString(5) }}"
+    bookId:
+      - 7213
+
+scenarios:
+  - name: "Guest User Browsing Catalog and Registering"
+    flow:
+      - get:
+          url: "/api/categories"
+      - think: 2
+      
+      - get:
+          url: "/api/books"
+      - think: 3 
+
+      - get:
+          url: "/api/books/{{ bookId }}"
+      - think: 2 
+
+      - post:
+          url: "/api/auth/register"
+          json:
+            username: "{{ username }}"
+            email: "{{ email }}"
+            password: "{{ password }}"
+            name: "{{ name }}"
