@@ -128,6 +128,7 @@ export const loanRelations = relations(loans, ({ one }) => ({
 
 export const auditLogs = pgTable("audit_logs", {
 	id: uuid("id").primaryKey().defaultRandom(),
+	correlationId: varchar("correlation_id", { length: 255 }),
 	userId: uuid("user_id").references(() => users.id),
 	action: varchar("action", { length: 255 }).notNull(),
 	status: varchar("status", { length: 50 }).notNull(),

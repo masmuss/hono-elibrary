@@ -11,6 +11,7 @@ export const auditLog = (options: AuditLogOptions): MiddlewareHandler => {
 		const user = c.get("user");
 		const ip = c.req.header("x-forwarded-for") || "127.0.0.1";
 		const userAgent = c.req.header("user-agent");
+		const correlationId = c.get("requestId");
 		let requestBody: any;
 
 		try {
@@ -32,11 +33,14 @@ export const auditLog = (options: AuditLogOptions): MiddlewareHandler => {
 		} finally {
 			const queries = queryLogger.getQueries();
 
+			const isSuccess = !error && c.res.status >= 200 && c.res.status < 300;
+
 			const db = createDrizzle();
 			await db.insert(auditLogs).values({
+				correlationId: correlationId,
 				userId: user ? user.id : null,
 				action: options.action,
-				status: error ? "FAILED" : "SUCCESS",
+				status: isSuccess ? "SUCCESS" : "FAILED",
 				payload: requestBody,
 				dbQuery: queries.join("\n---\n"),
 				ipAddress: ip,

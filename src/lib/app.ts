@@ -28,7 +28,7 @@ export default function createApp() {
 		console.log("⚪️ Rate limiter is inactive in test mode.");
 	}
 
-	app.use(requestId());
+	app.use("*", requestId());
 	app.onError(onError);
 	app.notFound(notFound);
 	return app;

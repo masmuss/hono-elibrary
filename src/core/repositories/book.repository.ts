@@ -24,11 +24,11 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		const filtersBuilder = this.filterBuilder(filter);
 		const searchBuilder = filter.search
 			? this.searchBuilder(filter.search, [
-				"title",
-				"author",
-				"publisher",
-				"isbn",
-			])
+					"title",
+					"author",
+					"publisher",
+					"isbn",
+				])
 			: null;
 
 		const whereCondition = and(
@@ -90,7 +90,10 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		return result;
 	}
 
-	private async isIsbnExists(isbn: string, dbInstance?: DbInstance): Promise<boolean> {
+	private async isIsbnExists(
+		isbn: string,
+		dbInstance?: DbInstance,
+	): Promise<boolean> {
 		const db = dbInstance || this.db;
 		const existingBook = await db.query.books.findFirst({
 			where: eq(books.isbn, isbn),
@@ -98,14 +101,16 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		return !!existingBook;
 	}
 
-	private async isCategoryExists(categoryId: number, dbInstance?: DbInstance): Promise<boolean> {
+	private async isCategoryExists(
+		categoryId: number,
+		dbInstance?: DbInstance,
+	): Promise<boolean> {
 		const db = dbInstance || this.db;
 		const existingCategory = await db.query.categories.findFirst({
 			where: eq(categories.id, categoryId),
 		});
 		return !!existingCategory;
 	}
-
 
 	async create(
 		book: BookInsert,
@@ -121,7 +126,7 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 			);
 		}
 
-		if (!await this.isCategoryExists(book.categoryId, db)) {
+		if (!(await this.isCategoryExists(book.categoryId, db))) {
 			throw new APIError(
 				404,
 				`Category with ID ${book.categoryId} not found.`,
