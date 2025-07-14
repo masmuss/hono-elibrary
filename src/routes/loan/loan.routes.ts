@@ -11,7 +11,9 @@ import {
 } from "@/core/schemas/loan.schema";
 import { authHeadersSchema } from "@/core/validations/auth.validation";
 import { createLoanSchema } from "@/core/validations/loan.validation";
+import { LoanEvent } from "@/lib/constants/enums/audit-log-events.enum";
 import { UserRole } from "@/lib/constants/enums/user-roles.enum";
+import { auditLog } from "@/middlewares/audit-log";
 import { authMiddleware } from "@/middlewares/auth";
 import { authorizeRole } from "@/middlewares/authorization";
 import { createRoute } from "@hono/zod-openapi";
@@ -29,6 +31,7 @@ export class LoanRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.ADMIN, UserRole.LIBRARIAN]),
+			auditLog({ action: LoanEvent.LOAN_GET_ALL }),
 		],
 		responses: {
 			200: this.successResponse(
@@ -48,7 +51,11 @@ export class LoanRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			query: paginationQuerySchema,
 		},
-		middleware: [authMiddleware],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.MEMBER]),
+			auditLog({ action: LoanEvent.LOAN_GET_MY_LOANS }),
+		],
 		responses: {
 			200: this.successResponse(
 				getAllLoansSuccessResponse,
@@ -72,6 +79,7 @@ export class LoanRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.MEMBER, UserRole.LIBRARIAN]),
+			auditLog({ action: LoanEvent.LOAN_CREATE_ATTEMPT }),
 		],
 		responses: {
 			201: this.successResponse(
@@ -96,7 +104,11 @@ export class LoanRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: UUIDParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: LoanEvent.LOAN_APPROVE_ATTEMPT }),
+		],
 		responses: {
 			200: this.successResponse(
 				getLoanSuccessResponse,
@@ -118,7 +130,11 @@ export class LoanRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: UUIDParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: LoanEvent.LOAN_REJECT_ATTEMPT }),
+		],
 		responses: {
 			200: this.successResponse(
 				getLoanSuccessResponse,
@@ -141,6 +157,7 @@ export class LoanRoutes extends BaseRoutes {
 		middleware: [
 			authMiddleware,
 			authorizeRole([UserRole.MEMBER, UserRole.LIBRARIAN]),
+			auditLog({ action: LoanEvent.LOAN_RETURN_ATTEMPT }),
 		],
 		responses: {
 			200: this.successResponse(

@@ -20,6 +20,7 @@ export class LoanHandler extends BaseHandler {
 	getMyLoans: AppRouteHandler<MyLoans> = async (c) => {
 		const user = c.get("user");
 		const filter = c.req.valid("query");
+		const db = c.get("dbWithLogger") || this.repository.db;
 
 		const memberRepo = new MemberRepository();
 		const member = await memberRepo.findByUserId(user.id);
@@ -32,7 +33,11 @@ export class LoanHandler extends BaseHandler {
 			);
 		}
 
-		const loans = await this.repository.getLoansByMemberId(member.id, filter);
+		const loans = await this.repository.getLoansByMemberId(
+			member.id,
+			filter,
+			db,
+		);
 		return c.json(
 			this.buildSuccessResponse(loans, "User's loans retrieved successfully"),
 			200,
@@ -41,7 +46,8 @@ export class LoanHandler extends BaseHandler {
 
 	getAllLoans: AppRouteHandler<LoanAll> = async (c) => {
 		const filter = c.req.valid("query");
-		const loans = await this.repository.getAllLoans(filter);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const loans = await this.repository.getAllLoans(filter, db);
 		return c.json(
 			this.buildSuccessResponse(loans, "Loans retrieved successfully"),
 			200,
@@ -50,7 +56,12 @@ export class LoanHandler extends BaseHandler {
 
 	createLoan: AppRouteHandler<LoanCreate> = async (c) => {
 		const body = c.req.valid("json");
-		const loan = await this.repository.createLoan(body.memberId, body.bookId);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const loan = await this.repository.createLoan(
+			body.memberId,
+			body.bookId,
+			db,
+		);
 		return c.json(
 			this.buildSuccessResponse({ data: loan }, "Loan created successfully"),
 			201,
@@ -60,7 +71,8 @@ export class LoanHandler extends BaseHandler {
 	approveLoan: AppRouteHandler<LoanApprove> = async (c) => {
 		const { id } = c.req.valid("param");
 		const librarianId = c.get("user").id;
-		const loan = await this.repository.approveLoan(id, librarianId);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const loan = await this.repository.approveLoan(id, librarianId, db);
 		return c.json(
 			this.buildSuccessResponse(loan, "Loan approved successfully"),
 			200,
@@ -70,7 +82,8 @@ export class LoanHandler extends BaseHandler {
 	rejectLoan: AppRouteHandler<LoanReject> = async (c) => {
 		const { id } = c.req.valid("param");
 		const librarianId = c.get("user").id;
-		const loan = await this.repository.rejectLoan(id, librarianId);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const loan = await this.repository.rejectLoan(id, librarianId, db);
 		return c.json(
 			this.buildSuccessResponse(loan, "Loan rejected successfully"),
 			200,
@@ -79,7 +92,8 @@ export class LoanHandler extends BaseHandler {
 
 	returnLoan: AppRouteHandler<LoanReturn> = async (c) => {
 		const { id } = c.req.valid("param");
-		const loan = await this.repository.returnLoan(id);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const loan = await this.repository.returnLoan(id, db);
 		return c.json(
 			this.buildSuccessResponse({ data: loan }, "Loan returned successfully"),
 			200,

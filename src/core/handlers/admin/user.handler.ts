@@ -16,7 +16,8 @@ export class AdminUserHandler extends BaseHandler {
 
 	getAllUsers: AppRouteHandler<AdminGetAllUsers> = async (c) => {
 		const filter = c.req.valid("query");
-		const result = await this.repository.getAllUsers(filter);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.getAllUsers(filter, db);
 		return c.json(
 			this.buildSuccessResponse(result, "Users retrieved successfully"),
 			200,
@@ -25,7 +26,8 @@ export class AdminUserHandler extends BaseHandler {
 
 	createUser: AppRouteHandler<AdminCreateUser> = async (c) => {
 		const body = c.req.valid("json");
-		const result = await this.repository.createUserByAdmin(body);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.createUserByAdmin(body, db);
 		return c.json(
 			this.buildSuccessResponse(result, "User created successfully by admin"),
 			201,
@@ -34,7 +36,8 @@ export class AdminUserHandler extends BaseHandler {
 
 	getUserById: AppRouteHandler<AdminGetUserById> = async (c) => {
 		const { id } = c.req.valid("param");
-		const result = await this.repository.byId(id);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.byId(id, db);
 		return c.json(
 			this.buildSuccessResponse(result, "User retrieved successfully"),
 			200,
@@ -44,7 +47,8 @@ export class AdminUserHandler extends BaseHandler {
 	updateUser: AppRouteHandler<AdminUpdateUser> = async (c) => {
 		const { id } = c.req.valid("param");
 		const body = c.req.valid("json");
-		const result = await this.repository.updateUser(id, body);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const result = await this.repository.updateUser(id, body, db);
 		return c.json(
 			this.buildSuccessResponse(result, "User updated successfully"),
 			200,
@@ -53,7 +57,8 @@ export class AdminUserHandler extends BaseHandler {
 
 	deleteUser: AppRouteHandler<AdminDeleteUser> = async (c) => {
 		const { id } = c.req.valid("param");
-		await this.repository.softDelete(id);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		await this.repository.softDelete(id, db);
 		return c.json(
 			this.buildSuccessResponse(null, "User deleted successfully"),
 			200,

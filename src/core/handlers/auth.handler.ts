@@ -30,6 +30,7 @@ export class AuthHandler extends BaseHandler {
 
 	register: AppRouteHandler<RegisterRoute> = async (c) => {
 		const body = c.req.valid("json");
+		const db = c.get("dbWithLogger") || this.repository.db;
 		const user = await this.repository.register(body);
 		return c.json(
 			this.buildSuccessResponse(user, "User registered successfully"),
@@ -39,12 +40,18 @@ export class AuthHandler extends BaseHandler {
 
 	login: AppRouteHandler<LoginRoute> = async (c) => {
 		const body = c.req.valid("json");
-		const user = await this.repository.login(body.username, body.password);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const user = await this.repository.login(body.username, body.password, db);
 
 		const { id, name, username, role } = user;
 
-		const accessToken: string = await generateAccessToken(user);
-		const refreshToken: string = await generateRefreshToken(user);
+		const tokenPayload = {
+			id,
+			name,
+			role: role.name,
+		} as const;
+		const accessToken: string = await generateAccessToken(tokenPayload);
+		const refreshToken: string = await generateRefreshToken(tokenPayload);
 
 		const responseData = { id, name, username, token: accessToken };
 
@@ -85,7 +92,8 @@ export class AuthHandler extends BaseHandler {
 			);
 		}
 
-		const user = await this.repository.byId(decoded.id);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		const user = await this.repository.byId(decoded.id, db);
 
 		if (!user.data || user.data.refreshToken !== tokenFromCookie) {
 			throw new APIError(
@@ -112,10 +120,16 @@ export class AuthHandler extends BaseHandler {
 
 	forgotPassword: AppRouteHandler<ForgotPasswordRoute> = async (c) => {
 		const { email } = c.req.valid("json");
-		const user = await db.query.users.findFirst({ where: eq(users.email, email) });
+		const user = await db.query.users.findFirst({
+			where: eq(users.email, email),
+		});
 
 		if (user) {
-			const resetToken = await this.repository.setPasswordResetToken(user.id);
+			const db = c.get("dbWithLogger") || this.repository.db;
+			const resetToken = await this.repository.setPasswordResetToken(
+				user.id,
+				db,
+			);
 			await sendPasswordResetEmail(user.email, resetToken);
 		}
 
@@ -130,7 +144,8 @@ export class AuthHandler extends BaseHandler {
 
 	resetPassword: AppRouteHandler<ResetPasswordRoute> = async (c) => {
 		const { token, newPassword } = c.req.valid("json");
-		await this.repository.resetPassword(token, newPassword);
+		const db = c.get("dbWithLogger") || this.repository.db;
+		await this.repository.resetPassword(token, newPassword, db);
 		return c.json(
 			this.buildSuccessResponse(null, "Password has been reset successfully."),
 			200,
@@ -151,11 +166,13 @@ export class AuthHandler extends BaseHandler {
 	changePassword: AppRouteHandler<ChangePasswordRoute> = async (c) => {
 		const user = c.get("user");
 		const body = c.req.valid("json");
+		const db = c.get("dbWithLogger") || this.repository.db;
 
 		await this.repository.changePassword(
 			user.id,
 			body.currentPassword,
 			body.newPassword,
+			db,
 		);
 
 		return c.json(
@@ -167,7 +184,8 @@ export class AuthHandler extends BaseHandler {
 	logout: AppRouteHandler<LogoutRoute> = async (c) => {
 		const user = c.get("user");
 		if (user) {
-			await this.repository.updateRefreshToken(user.id, null);
+			const db = c.get("dbWithLogger") || this.repository.db;
+			await this.repository.updateRefreshToken(user.id, null, db);
 		}
 
 		setCookie(c, "refreshToken", "", { maxAge: 0 });

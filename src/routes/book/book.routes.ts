@@ -12,7 +12,9 @@ import {
 	createBookSchema,
 	updateBookSchema,
 } from "@/core/validations/book.validation";
+import { BookEvent } from "@/lib/constants/enums/audit-log-events.enum";
 import { UserRole } from "@/lib/constants/enums/user-roles.enum";
+import { auditLog } from "@/middlewares/audit-log";
 import { authMiddleware } from "@/middlewares/auth";
 import { authorizeRole } from "@/middlewares/authorization";
 import { createRoute, z } from "@hono/zod-openapi";
@@ -26,6 +28,7 @@ export class BookRoutes extends BaseRoutes {
 		request: {
 			query: getAllBooksQuerySchema,
 		},
+		middleware: [auditLog({ action: BookEvent.GET_ALL_BOOKS })],
 		responses: {
 			200: this.successResponse(
 				getAllBooksSuccessResponse,
@@ -42,6 +45,7 @@ export class BookRoutes extends BaseRoutes {
 		request: {
 			params: idParamSchema,
 		},
+		middleware: [auditLog({ action: BookEvent.GET_BOOK_BY_ID })],
 		responses: {
 			200: this.successResponse(
 				getBookSuccessResponse,
@@ -60,7 +64,11 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			body: jsonContentRequired(createBookSchema, "Create book schema payload"),
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: BookEvent.CREATE_BOOK }),
+		],
 		responses: {
 			201: this.successResponse(
 				getBookSuccessResponse,
@@ -68,6 +76,7 @@ export class BookRoutes extends BaseRoutes {
 			),
 			401: this.errorResponse("Unauthorized"),
 			403: this.errorResponse("Forbidden"),
+			404: this.errorResponse("Category not found"),
 			422: this.errorResponse("Validation Error"),
 		},
 	});
@@ -82,7 +91,11 @@ export class BookRoutes extends BaseRoutes {
 			params: idParamSchema,
 			body: jsonContentRequired(updateBookSchema, "Update book schema payload"),
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: BookEvent.UPDATE_BOOK }),
+		],
 		responses: {
 			200: this.successResponse(
 				getBookSuccessResponse,
@@ -104,7 +117,11 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: idParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: BookEvent.SOFT_DELETE_BOOK }),
+		],
 		responses: {
 			200: this.successResponse(z.null(), "Book deleted successfully"),
 			401: this.errorResponse("Unauthorized"),
@@ -122,7 +139,11 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: idParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: BookEvent.RESTORE_BOOK }),
+		],
 		responses: {
 			200: this.successResponse(errorResponse, "Book restored successfully"),
 			400: this.errorResponse("Book ID is required"),
@@ -139,7 +160,11 @@ export class BookRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: idParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.ADMIN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: BookEvent.HARD_DELETE_BOOK }),
+		],
 		responses: {
 			200: this.successResponse(
 				errorResponse,

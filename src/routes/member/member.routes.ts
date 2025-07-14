@@ -5,6 +5,8 @@ import { authMiddleware } from "@/middlewares/auth";
 import { getMemberProfileSuccessResponse } from "@/core/schemas/member.schema";
 import { updateMemberProfileSchema } from "@/core/validations/member.validation";
 import jsonContentRequired from "@/core/helpers/json-content-required";
+import { auditLog } from "@/middlewares/audit-log";
+import { MemberEvent } from "@/lib/constants/enums/audit-log-events.enum";
 
 export class MemberRoutes extends BaseRoutes {
 	getProfile = createRoute({
@@ -15,7 +17,10 @@ export class MemberRoutes extends BaseRoutes {
 		request: {
 			headers: authHeadersSchema,
 		},
-		middleware: [authMiddleware],
+		middleware: [
+			authMiddleware,
+			auditLog({ action: MemberEvent.MEMBER_GET_BY_ID }),
+		],
 		responses: {
 			200: this.successResponse(getMemberProfileSuccessResponse, "OK"),
 			401: this.errorResponse("Unauthorized"),
@@ -36,7 +41,10 @@ export class MemberRoutes extends BaseRoutes {
 				"Profile update payload",
 			),
 		},
-		middleware: [authMiddleware],
+		middleware: [
+			authMiddleware,
+			auditLog({ action: MemberEvent.MEMBER_UPDATE }),
+		],
 		responses: {
 			200: this.successResponse(getMemberProfileSuccessResponse, "OK"),
 			401: this.errorResponse("Unauthorized"),

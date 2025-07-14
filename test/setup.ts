@@ -2,11 +2,12 @@ import db from '@/db';
 import * as schema from '@/db/schema';
 import { UserRole } from '@/lib/constants/enums/user-roles.enum';
 import { eq } from 'drizzle-orm';
-import { afterAll, beforeEach } from 'bun:test'
+import { afterAll, beforeAll, beforeEach } from 'bun:test'
 import redisClient from '@/lib/redis';
 
 async function clearDatabase() {
     try {
+        await db.delete(schema.auditLogs);
         await db.delete(schema.loans);
         await db.delete(schema.books);
         await db.delete(schema.members);
@@ -34,8 +35,6 @@ async function seedRoles() {
 }
 
 afterAll(async () => {
-    await clearDatabase();
-
     if (redisClient.status === 'ready') {
         redisClient.disconnect();
         console.log('Redis client disconnected.');
@@ -44,7 +43,7 @@ afterAll(async () => {
     console.log('Global teardown complete.');
 });
 
-beforeEach(async () => {
+beforeAll(async () => {
     await clearDatabase();
     await seedRoles();
 });

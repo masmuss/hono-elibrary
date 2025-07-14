@@ -1,4 +1,5 @@
 import type { Environment } from "@/config/types";
+import type { createDrizzle } from "@/db";
 import type { OpenAPIHono, RouteConfig, RouteHandler } from "@hono/zod-openapi";
 
 export interface AppBindings {
@@ -14,3 +15,9 @@ export type AppRouteHandler<R extends RouteConfig> = RouteHandler<
 	R,
 	AppBindings
 >;
+
+declare module "hono" {
+	interface ContextVariableMap {
+		dbWithLogger: ReturnType<typeof createDrizzle>;
+	}
+}

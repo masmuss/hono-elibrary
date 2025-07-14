@@ -4,6 +4,7 @@ import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
 import type { Loan, LoanQueryResult } from "../types/loan";
 import type { Filter } from "./types";
 import { APIError } from "../helpers/api-error";
+import type { DbInstance } from "../types/db";
 
 const MAX_ACTIVE_LOANS = 3;
 
@@ -17,9 +18,10 @@ export class LoanRepository extends SoftDeleteMixin {
 	private async getLoanDetails(
 		loanId: string,
 		trx?: any,
+		dbInstance?: DbInstance,
 	): Promise<LoanQueryResult> {
-		const dbInstance = trx || this.db;
-		return await dbInstance.query.loans.findFirst({
+		const db = trx || dbInstance || this.db;
+		return await db.query.loans.findFirst({
 			where: eq(loans.id, loanId),
 			columns: {
 				id: true,
@@ -57,7 +59,7 @@ export class LoanRepository extends SoftDeleteMixin {
 		});
 	}
 
-	async getAllLoans(filter: Partial<Loan> & Filter) {
+	async getAllLoans(filter: Partial<Loan> & Filter, dbInstance?: DbInstance) {
 		const filtersBuilder = this.filterBuilder(filter);
 		const searchBuilder = filter.search
 			? this.searchBuilder(filter.search, ["memberId"])
@@ -72,7 +74,8 @@ export class LoanRepository extends SoftDeleteMixin {
 		const whereCondition =
 			whereConditions.length > 0 ? and(...whereConditions) : undefined;
 
-		const query = await this.db.query.loans.findMany({
+		const db = dbInstance || this.db;
+		const query = await db.query.loans.findMany({
 			where: whereCondition,
 			columns: {
 				id: true,
@@ -112,8 +115,13 @@ export class LoanRepository extends SoftDeleteMixin {
 		return { data: query };
 	}
 
-	async getLoansByMemberId(memberId: string, filter: Filter) {
-		const query = this.db.query.loans.findMany({
+	async getLoansByMemberId(
+		memberId: string,
+		filter: Filter,
+		dbInstance?: DbInstance,
+	) {
+		const db = dbInstance || this.db;
+		const query = db.query.loans.findMany({
 			where: and(eq(loans.memberId, memberId), isNull(loans.deletedAt)),
 			orderBy: [desc(loans.loanDate)],
 			limit: filter.pageSize || 10,
@@ -136,7 +144,7 @@ export class LoanRepository extends SoftDeleteMixin {
 			},
 		});
 
-		const totalQuery = await this.db
+		const totalQuery = await db
 			.select({ count: sql<number>`count(*)` })
 			.from(this.table)
 			.where(eq(loans.memberId, memberId));
@@ -162,8 +170,13 @@ export class LoanRepository extends SoftDeleteMixin {
 		return !!activeLoan;
 	}
 
-	async createLoan(memberId: string, bookId: number): Promise<LoanQueryResult> {
-		const activeLoansCountResult = await this.db
+	async createLoan(
+		memberId: string,
+		bookId: number,
+		dbInstance?: DbInstance,
+	): Promise<LoanQueryResult> {
+		const db = dbInstance || this.db;
+		const activeLoansCountResult = await db
 			.select({ value: count() })
 			.from(loans)
 			.where(and(eq(loans.memberId, memberId), isNull(loans.returnedAt)));
@@ -186,7 +199,7 @@ export class LoanRepository extends SoftDeleteMixin {
 			);
 		}
 
-		return await this.db.transaction(async (trx) => {
+		return await db.transaction(async (trx) => {
 			const book = await trx.query.books.findFirst({
 				where: eq(books.id, bookId),
 				columns: { availableCopies: true },
@@ -254,8 +267,10 @@ export class LoanRepository extends SoftDeleteMixin {
 	async approveLoan(
 		loanId: string,
 		librarianId: string,
+		dbInstance?: DbInstance,
 	): Promise<{ data: LoanQueryResult }> {
-		return await this.db.transaction(async (trx) => {
+		const db = dbInstance || this.db;
+		return await db.transaction(async (trx) => {
 			const loan = await trx.query.loans.findFirst({
 				where: eq(loans.id, loanId),
 			});
@@ -288,8 +303,10 @@ export class LoanRepository extends SoftDeleteMixin {
 	async rejectLoan(
 		loanId: string,
 		librarianId: string,
+		dbInstance?: DbInstance,
 	): Promise<{ data: LoanQueryResult }> {
-		return await this.db.transaction(async (trx) => {
+		const db = dbInstance || this.db;
+		return await db.transaction(async (trx) => {
 			const loan = await this.findLoanForModification(loanId, trx);
 
 			const book = await trx.query.books.findFirst({
@@ -320,8 +337,12 @@ export class LoanRepository extends SoftDeleteMixin {
 		});
 	}
 
-	async returnLoan(loanId: string): Promise<LoanQueryResult> {
-		return await this.db.transaction(async (trx) => {
+	async returnLoan(
+		loanId: string,
+		dbInstance?: DbInstance,
+	): Promise<LoanQueryResult> {
+		const db = dbInstance || this.db;
+		return await db.transaction(async (trx) => {
 			const loan = await trx.query.loans.findFirst({
 				where: eq(loans.id, loanId),
 				columns: { id: true, returnedAt: true, bookId: true, status: true },

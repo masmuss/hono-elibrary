@@ -1,4 +1,5 @@
 import { APIError } from "@/core/helpers/api-error";
+import { HTTPException } from "hono/http-exception";
 import type { ErrorHandler } from "hono";
 import { ZodError } from "zod";
 
@@ -19,6 +20,13 @@ const createErrorResponse = (
 };
 
 const onError: ErrorHandler = (err, c) => {
+	if (err instanceof HTTPException) {
+		return c.json(
+			createErrorResponse(err.status, err.message, `E${err.status}`),
+			err.status as any,
+		);
+	}
+
 	if (err instanceof APIError) {
 		return c.json(
 			createErrorResponse(err.statusCode, err.message, err.errorCode),

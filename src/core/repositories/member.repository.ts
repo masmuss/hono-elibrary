@@ -4,6 +4,7 @@ import { members, users } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import type { MemberProfileUpdate } from "../types/member";
 import { APIError } from "../helpers/api-error";
+import type { DbInstance } from "../types/db";
 
 export class MemberRepository extends BaseRepository {
 	constructor() {
@@ -26,8 +27,9 @@ export class MemberRepository extends BaseRepository {
 		return member;
 	}
 
-	async getProfileByUserId(userId: string, trx: any = this.db) {
-		const memberProfile = await trx.query.members.findFirst({
+	async getProfileByUserId(userId: string, dbInstance: DbInstance) {
+		const db = dbInstance || this.db;
+		const memberProfile = await db.query.members.findFirst({
 			where: eq(members.userId, userId),
 			columns: {
 				id: true,
@@ -56,7 +58,12 @@ export class MemberRepository extends BaseRepository {
 		return memberProfile;
 	}
 
-	async updateProfile(userId: string, data: MemberProfileUpdate) {
+	async updateProfile(
+		userId: string,
+		data: MemberProfileUpdate,
+		dbInstance?: DbInstance,
+	) {
+		const db = dbInstance || this.db;
 		return await db.transaction(async (trx) => {
 			if (data.name) {
 				await trx

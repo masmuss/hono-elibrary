@@ -4,11 +4,16 @@ import type { InferSelectModel } from "drizzle-orm";
 import type { PaginatedData } from "../base/types";
 import type { Filter } from "../repositories/types";
 import { APIError } from "../helpers/api-error";
+import type { DbInstance } from "../types/db";
 
 export class SoftDeleteMixin extends BaseRepository {
-	async softDelete(id: string | number): Promise<{ data: any }> {
+	async softDelete(
+		id: string | number,
+		dbInstance?: DbInstance,
+	): Promise<{ data: any }> {
 		const deletedAt = new Date();
-		const [result] = await this.db
+		const db = dbInstance ?? this.db;
+		const [result] = await db
 			.update(this.table)
 			.set({ deletedAt })
 			.where(eq((this.table as any).id, id))
@@ -20,8 +25,12 @@ export class SoftDeleteMixin extends BaseRepository {
 		return { data: result };
 	}
 
-	async restore(id: string | number): Promise<{ data: any }> {
-		const [result] = await this.db
+	async restore(
+		id: string | number,
+		dbInstance?: DbInstance,
+	): Promise<{ data: any }> {
+		const db = dbInstance ?? this.db;
+		const [result] = await db
 			.update(this.table)
 			.set({ deletedAt: null })
 			.where(eq((this.table as any).id, id))
@@ -37,8 +46,12 @@ export class SoftDeleteMixin extends BaseRepository {
 		return { data: result };
 	}
 
-	async hardDelete(id: string | number): Promise<{ data: any }> {
-		const [result] = await this.db
+	async hardDelete(
+		id: string | number,
+		dbInstance?: DbInstance,
+	): Promise<{ data: any }> {
+		const db = dbInstance ?? this.db;
+		const [result] = await db
 			.delete(this.table)
 			.where(eq((this.table as any).id, id))
 			.returning();
@@ -55,10 +68,13 @@ export class SoftDeleteMixin extends BaseRepository {
 
 	async get(
 		filter: Partial<InferSelectModel<typeof this.table> & Filter>,
+		dbInstance?: DbInstance,
 	): Promise<PaginatedData> {
 		const filtersBuilder = this.filterBuilder(filter);
 		const whereCondition = sql`${sql.join(filtersBuilder, " AND ")} AND ${sql`${(this.table as any).deletedAt} IS NULL`}`;
-		const query = this.db.select().from(this.table).where(whereCondition);
+
+		const db = dbInstance ?? this.db;
+		const query = db.select().from(this.table).where(whereCondition);
 
 		return await this.withPagination(
 			query.$dynamic(),

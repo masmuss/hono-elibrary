@@ -13,7 +13,10 @@ export const EnvSchema = z.object({
 	SMTP_PORT: z.string().default("587").readonly(),
 	SMTP_USER: z.string().default("user").readonly(),
 	SMTP_PASS: z.string().default("password").readonly(),
-	EMAIL_FROM: z.string().default("E-Library <no-reply@elibrary.com>").readonly(),
+	EMAIL_FROM: z
+		.string()
+		.default("E-Library <no-reply@elibrary.com>")
+		.readonly(),
 });
 
 export type Environment = z.infer<typeof EnvSchema>;

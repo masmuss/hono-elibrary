@@ -18,7 +18,8 @@ export class BookHandler extends BaseHandler {
 
 	getAllBooks: AppRouteHandler<AllBooksRoute> = async (c) => {
 		const filter = c.req.valid("query");
-		const books = await this.repository.get(filter);
+		const db = c.get("dbWithLogger") ?? this.repository.db;
+		const books = await this.repository.get(filter, db);
 		return c.json(
 			this.buildSuccessResponse(books, "Books retrieved successfully"),
 		);
@@ -26,7 +27,8 @@ export class BookHandler extends BaseHandler {
 
 	getBookById: AppRouteHandler<BookByIdRoute> = async (c) => {
 		const { id } = c.req.valid("param");
-		const book = await this.repository.byId(id);
+		const db = c.get("dbWithLogger") ?? this.repository.db;
+		const book = await this.repository.byId(id, db);
 		return c.json(
 			this.buildSuccessResponse(book, "Book retrieved successfully"),
 			200,
@@ -35,7 +37,8 @@ export class BookHandler extends BaseHandler {
 
 	createBook: AppRouteHandler<CreateBookRoute> = async (c) => {
 		const body = c.req.valid("json");
-		const book = await this.repository.create(body);
+		const db = c.get("dbWithLogger") ?? this.repository.db;
+		const book = await this.repository.create(body, db);
 		return c.json(
 			this.buildSuccessResponse(book, "Book created successfully"),
 			201,
@@ -45,7 +48,8 @@ export class BookHandler extends BaseHandler {
 	updateBook: AppRouteHandler<UpdateBookRoute> = async (c) => {
 		const { id } = c.req.valid("param");
 		const body = c.req.valid("json");
-		const book = await this.repository.update(id, body);
+		const db = c.get("dbWithLogger") ?? this.repository.db;
+		const book = await this.repository.update(id, body, db);
 		return c.json(
 			this.buildSuccessResponse(book, "Book updated successfully"),
 			200,
@@ -54,7 +58,8 @@ export class BookHandler extends BaseHandler {
 
 	softDeleteBook: AppRouteHandler<SoftDeleteBookRoute> = async (c) => {
 		const { id } = c.req.valid("param");
-		await this.repository.softDelete(id);
+		const db = c.get("dbWithLogger") ?? this.repository.db;
+		await this.repository.softDelete(id, db);
 		return c.json(
 			this.buildSuccessResponse(null, "Book deleted successfully"),
 			200,
@@ -63,7 +68,8 @@ export class BookHandler extends BaseHandler {
 
 	restoreBook: AppRouteHandler<RestoreBookRoute> = async (c) => {
 		const { id } = c.req.valid("param");
-		const book = await this.repository.restore(id);
+		const db = c.get("dbWithLogger") ?? this.repository.db;
+		const book = await this.repository.restore(id, db);
 		return c.json(
 			this.buildSuccessResponse(book, "Book restored successfully"),
 			200,
@@ -72,7 +78,8 @@ export class BookHandler extends BaseHandler {
 
 	hardDeleteBook: AppRouteHandler<HardDeleteBookRoute> = async (c) => {
 		const { id } = c.req.valid("param");
-		await this.repository.hardDelete(id);
+		const db = c.get("dbWithLogger") ?? this.repository.db;
+		await this.repository.hardDelete(id, db);
 		return c.json(
 			this.buildSuccessResponse(null, "Book permanently deleted"),
 			200,

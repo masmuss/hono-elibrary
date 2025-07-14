@@ -10,23 +10,20 @@ import { generateAuthToken } from "test/utils/auth-helpers";
 import type { Book } from "@/core/types/book";
 import type { ApiErrorResponse, ApiPaginatedResponse, ApiSuccessResponse } from "./types";
 
-type Body = {
-    data: Book | Book[] | [] | null;
-    message?: string;
-    errors?: { path: string; message: string }[] | null;
-}
-
 describe("Book Endpoints", () => {
     let adminToken: string;
+    let librarianToken: string;
     let memberToken: string;
     let testBook1: Book;
     let testCategory: { id: number; name: string };
 
     beforeEach(async () => {
         const adminUser = (await createTestUser(UserRole.ADMIN)).user;
+        const librarianUser = (await createTestUser(UserRole.LIBRARIAN)).user;
         const memberUser = (await createTestUser(UserRole.MEMBER)).user;
 
         adminToken = await generateAuthToken({ id: adminUser.id, role: UserRole.ADMIN });
+        librarianToken = await generateAuthToken({ id: librarianUser.id, role: UserRole.LIBRARIAN });
         memberToken = await generateAuthToken({ id: memberUser.id, role: UserRole.MEMBER });
 
         testCategory = await createTestCategory();
@@ -53,6 +50,15 @@ describe("Book Endpoints", () => {
             expect(body.data).toBeArray()
             expect(body.data.length).toBe(1);
             expect(body.page).toBe(1);
+        });
+
+        it("should handle search query correctly", async () => {
+            const res = await app.request(`/api/books?search=${encodeURIComponent(testBook1.title)}`);
+            const body = await res.json() as ApiSuccessResponse<Book[]>;
+
+            expect(res.status).toBe(200);
+            expect(body.data).toBeArray();
+            expect(body.data.some(book => book.title.includes(testBook1.title))).toBe(true);
         });
     });
 
@@ -86,12 +92,12 @@ describe("Book Endpoints", () => {
             availableCopies: 10,
         };
 
-        it("should create a new book for an ADMIN user", async () => {
+        it("should create a new book for an LIBRARIAN user", async () => {
             const res = await app.request("/api/books", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${adminToken}`,
+                    Authorization: `Bearer ${librarianToken}`,
                 },
                 body: JSON.stringify({ ...newBookData, categoryId: testCategory.id }),
             });
@@ -123,6 +129,19 @@ describe("Book Endpoints", () => {
             expect(res.status).toBe(403);
         });
 
+        it("should return 403 Forbidden for an ADMIN user", async () => {
+            const res = await app.request("/api/books", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${adminToken}`,
+                },
+                body: JSON.stringify(newBookData),
+            });
+
+            expect(res.status).toBe(403);
+        });
+
         it("should return 401 Unauthorized if no token is provided", async () => {
             const res = await app.request("/api/books", {
                 method: "POST",
@@ -139,7 +158,7 @@ describe("Book Endpoints", () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    Authorization: `Bearer ${adminToken}`,
+                    Authorization: `Bearer ${librarianToken}`,
                 },
                 body: JSON.stringify(invalidData),
             });
@@ -150,6 +169,135 @@ describe("Book Endpoints", () => {
             expect(body.error.code).toInclude("VALIDATION_ERROR");
             expect(body.error.message).toBe("The provided data is invalid.");
         });
+
+        it("should return 409 for duplicate ISBN", async () => {
+            const duplicateData = { ...newBookData, isbn: testBook1.isbn };
+            const res = await app.request("/api/books", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify({ ...duplicateData, categoryId: testCategory.id }),
+            });
+
+            expect(res.status).toBe(409);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("BOOK_ALREADY_EXISTS");
+        });
+
+        it("should return 404 for non-existent category", async () => {
+            const res = await app.request("/api/books", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify({
+                    ...newBookData,
+                    isbn: "9783161484999",
+                    categoryId: 99999,
+                }),
+            });
+
+            expect(res.status).toBe(404);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toBe("CATEGORY_NOT_FOUND");
+        });
+    });
+
+    describe("PUT /api/books/:id", () => {
+        let bookToUpdate: Book;
+        const updateData = {
+            title: "Updated Book Title",
+            author: "Updated Author",
+            synopsis: "Updated synopsis",
+            totalPages: 400,
+            publicationYear: 2024,
+            totalCopies: 15,
+            availableCopies: 12,
+        };
+
+        beforeEach(async () => {
+            bookToUpdate = await createTestBook(testCategory.id);
+        });
+
+        it("should allow a LIBRARIAN to update a book", async () => {
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify({ ...updateData, categoryId: testCategory.id }),
+            });
+
+            const body = await res.json() as ApiSuccessResponse<Book>;
+
+            expect(res.status).toBe(200);
+            expect(body.data.title).toBe(updateData.title);
+            expect(body.data.author).toBe(updateData.author);
+            expect(body.data.synopsis).toBe(updateData.synopsis);
+            expect(body.data.totalPages).toBe(updateData.totalPages);
+            expect(body.data.publicationYear).toBe(updateData.publicationYear);
+            expect(body.data.totalCopies).toBe(updateData.totalCopies);
+            expect(body.data.availableCopies).toBe(updateData.availableCopies);
+        });
+
+        it("should return 403 for a MEMBER user", async () => {
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${memberToken}`,
+                },
+                body: JSON.stringify(updateData),
+            });
+
+            expect(res.status).toBe(403);
+        });
+
+        it("should return 403 for an ADMIN user", async () => {
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${adminToken}`,
+                },
+                body: JSON.stringify(updateData),
+            });
+
+            expect(res.status).toBe(403);
+        });
+
+        it("should return 404 for non-existent book", async () => {
+            const res = await app.request("/api/books/99999", {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify(updateData),
+            });
+
+            expect(res.status).toBe(404);
+        });
+
+        it("should return 422 for invalid update data", async () => {
+            const invalidData = { ...updateData, title: "" };
+            const res = await app.request(`/api/books/${bookToUpdate.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${librarianToken}`,
+                },
+                body: JSON.stringify(invalidData),
+            });
+
+            expect(res.status).toBe(422);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.error.code).toInclude("VALIDATION_ERROR");
+        });
     });
 
     describe("DELETE /api/books/:id", () => {
@@ -159,10 +307,10 @@ describe("Book Endpoints", () => {
             bookToDelete = await createTestBook(testCategory.id);
         });
 
-        it("should soft delete a book for an ADMIN user", async () => {
+        it("should soft delete a book for a LIBRARIAN user", async () => {
             const res = await app.request(`/api/books/${bookToDelete.id}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${librarianToken}` },
             });
 
             expect(res.status).toBe(200);
@@ -181,7 +329,7 @@ describe("Book Endpoints", () => {
         it("should return 422 when trying to delete a book with an invalid ID", async () => {
             const res = await app.request("/api/books/invalid-id", {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${librarianToken}` },
             });
 
             expect(res.status).toBe(422);
@@ -190,7 +338,7 @@ describe("Book Endpoints", () => {
         it("should return 404 when trying to delete a non-existent book", async () => {
             const res = await app.request("/api/books/99999", {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${librarianToken}` },
             });
 
             expect(res.status).toBe(404);
@@ -204,6 +352,15 @@ describe("Book Endpoints", () => {
             });
             expect(res.status).toBe(403);
         });
+
+        it("should return 403 when an ADMIN user tries to delete a book", async () => {
+            const anotherBook = await createTestBook(testCategory.id);
+            const res = await app.request(`/api/books/${anotherBook.id}`, {
+                method: "DELETE",
+                headers: { Authorization: `Bearer ${adminToken}` },
+            });
+            expect(res.status).toBe(403);
+        });
     });
 
     describe("POST /api/books/:id/restore", () => {
@@ -213,15 +370,15 @@ describe("Book Endpoints", () => {
             const bookToCreate = await createTestBook(testCategory.id);
             await app.request(`/api/books/${bookToCreate.id}`, {
                 method: "DELETE",
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${librarianToken}` },
             });
             softDeletedBook = bookToCreate;
         });
 
-        it("should restore a soft-deleted book for an ADMIN user", async () => {
+        it("should restore a soft-deleted book for a LIBRARIAN user", async () => {
             const res = await app.request(`/api/books/${softDeletedBook.id}/restore`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${librarianToken}` },
             });
 
             expect(res.status).toBe(200);
@@ -243,11 +400,19 @@ describe("Book Endpoints", () => {
             expect(res.status).toBe(403);
         });
 
+        it("should return 403 for an ADMIN user trying to restore", async () => {
+            const res = await app.request(`/api/books/${softDeletedBook.id}/restore`, {
+                method: "POST",
+                headers: { Authorization: `Bearer ${adminToken}` },
+            });
+            expect(res.status).toBe(403);
+        });
+
         it("should return 404 if trying to restore a book that is not soft-deleted", async () => {
             const activeBook = await createTestBook(testCategory.id);
             const res = await app.request(`/api/books/${activeBook.id + 1}/restore`, {
                 method: "POST",
-                headers: { Authorization: `Bearer ${adminToken}` },
+                headers: { Authorization: `Bearer ${librarianToken}` },
             });
 
             expect(res.status).toBe(404);
@@ -255,14 +420,14 @@ describe("Book Endpoints", () => {
     });
 
     describe("DELETE /api/books/:id/hard-delete", () => {
-        it("should permanently delete a book for an ADMIN user", async () => {
+        it("should permanently delete a book for a LIBRARIAN user", async () => {
             const bookToHardDelete = await createTestBook(testCategory.id);
 
             const res = await app.request(
                 `/api/books/${bookToHardDelete.id}/hard-delete`,
                 {
                     method: "DELETE",
-                    headers: { Authorization: `Bearer ${adminToken}` },
+                    headers: { Authorization: `Bearer ${librarianToken}` },
                 },
             );
 
@@ -281,6 +446,18 @@ describe("Book Endpoints", () => {
                 {
                     method: "DELETE",
                     headers: { Authorization: `Bearer ${memberToken}` },
+                },
+            );
+            expect(res.status).toBe(403);
+        });
+
+        it("should return 403 for an ADMIN user trying to hard-delete", async () => {
+            const bookToHardDelete = await createTestBook(testCategory.id);
+            const res = await app.request(
+                `/api/books/${bookToHardDelete.id}/hard-delete`,
+                {
+                    method: "DELETE",
+                    headers: { Authorization: `Bearer ${adminToken}` },
                 },
             );
             expect(res.status).toBe(403);

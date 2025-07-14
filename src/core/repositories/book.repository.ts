@@ -1,5 +1,5 @@
 import type { Repository } from "@/core/interfaces/repository.interface";
-import { books } from "@/db/schema";
+import { books, categories } from "@/db/schema";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import type { PaginatedData } from "../base/types";
 import { SoftDeleteMixin } from "../mixins/soft-delete.mixin";
@@ -8,6 +8,7 @@ import type { Filter } from "./types";
 import { APIError } from "../helpers/api-error";
 import { CacheKeys } from "@/lib/constants/cache-keys";
 import redisClient from "@/lib/redis";
+import type { DbInstance } from "../types/db";
 
 export class BookRepository extends SoftDeleteMixin implements Repository {
 	constructor() {
@@ -16,15 +17,18 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		});
 	}
 
-	async get(filter: Partial<Book> & Filter): Promise<PaginatedData> {
+	async get(
+		filter: Partial<Book> & Filter,
+		dbInstance?: DbInstance,
+	): Promise<PaginatedData> {
 		const filtersBuilder = this.filterBuilder(filter);
 		const searchBuilder = filter.search
 			? this.searchBuilder(filter.search, [
-					"title",
-					"author",
-					"publisher",
-					"isbn",
-				])
+				"title",
+				"author",
+				"publisher",
+				"isbn",
+			])
 			: null;
 
 		const whereCondition = and(
@@ -33,7 +37,8 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 			...(searchBuilder ? [searchBuilder] : []),
 		);
 
-		const query = this.db
+		const db = dbInstance ?? this.db;
+		const query = db
 			.select({
 				id: books.id,
 				title: books.title,
@@ -55,7 +60,7 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		);
 	}
 
-	async byId(id: number): Promise<{ data: Book }> {
+	async byId(id: number, dbInstance?: DbInstance): Promise<{ data: Book }> {
 		const cacheKey = CacheKeys.BOOKS.BY_ID(id);
 
 		const cachedBook = await redisClient.get(cacheKey);
@@ -63,7 +68,8 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 			return JSON.parse(cachedBook);
 		}
 
-		const query = await this.db.query.books.findFirst({
+		const db = dbInstance ?? this.db;
+		const query = await db.query.books.findFirst({
 			where: and(eq(books.id, id), isNull(books.deletedAt)),
 			with: {
 				category: {
@@ -84,8 +90,46 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		return result;
 	}
 
-	async create(book: BookInsert): Promise<{ data: Book }> {
-		const [query] = await this.db.insert(books).values(book).returning();
+	private async isIsbnExists(isbn: string, dbInstance?: DbInstance): Promise<boolean> {
+		const db = dbInstance || this.db;
+		const existingBook = await db.query.books.findFirst({
+			where: eq(books.isbn, isbn),
+		});
+		return !!existingBook;
+	}
+
+	private async isCategoryExists(categoryId: number, dbInstance?: DbInstance): Promise<boolean> {
+		const db = dbInstance || this.db;
+		const existingCategory = await db.query.categories.findFirst({
+			where: eq(categories.id, categoryId),
+		});
+		return !!existingCategory;
+	}
+
+
+	async create(
+		book: BookInsert,
+		dbInstance?: DbInstance,
+	): Promise<{ data: Book }> {
+		const db = dbInstance ?? this.db;
+
+		if (await this.isIsbnExists(book.isbn, db)) {
+			throw new APIError(
+				409,
+				"A book with this ISBN already exists.",
+				"BOOK_ALREADY_EXISTS",
+			);
+		}
+
+		if (!await this.isCategoryExists(book.categoryId, db)) {
+			throw new APIError(
+				404,
+				`Category with ID ${book.categoryId} not found.`,
+				"CATEGORY_NOT_FOUND",
+			);
+		}
+
+		const [query] = await db.insert(books).values(book).returning();
 		if (!query) {
 			throw new APIError(500, "Failed to create book record");
 		}
@@ -95,8 +139,13 @@ export class BookRepository extends SoftDeleteMixin implements Repository {
 		return { data: query };
 	}
 
-	async update(id: number, book: BookUpdate): Promise<{ data: Book }> {
-		const [query] = await this.db
+	async update(
+		id: number,
+		book: BookUpdate,
+		dbInstance?: DbInstance,
+	): Promise<{ data: Book }> {
+		const db = dbInstance ?? this.db;
+		const [query] = await db
 			.update(books)
 			.set(book)
 			.where(and(eq(books.id, id), isNull(books.deletedAt)))

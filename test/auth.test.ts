@@ -132,6 +132,70 @@ describe('Auth Endpoints', () => {
             expect(body.error.code).toBe('VALIDATION_ERROR');
             expect(body.error.message).toEqual('The provided data is invalid.');
         });
+
+        it('should return 422 for missing required fields', async () => {
+            const incompleteUserData = {
+                username: 'testuser',
+                email: 'test@example.com',
+            };
+
+            const res = await app
+                .request('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify(incompleteUserData),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+            expect(res.status).toBe(422);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('VALIDATION_ERROR');
+        });
+
+        it('should return 422 for invalid email format', async () => {
+            const userData = {
+                name: 'Test User',
+                username: 'testuser_email',
+                email: 'invalid-email-format',
+                password: 'password123',
+            };
+
+            const res = await app
+                .request('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify(userData),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+            expect(res.status).toBe(422);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('VALIDATION_ERROR');
+        });
+
+        it('should return 422 for invalid content type', async () => {
+            const userData = {
+                name: 'Test User',
+                username: 'testuser_content',
+                email: 'test@example.com',
+                password: 'password123',
+            };
+
+            const res = await app
+                .request('/api/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify(userData),
+                    headers: {
+                        'Content-Type': 'text/plain',
+                    },
+                })
+
+            expect(res.status).toBe(422);
+        });
     });
 
     describe('POST /api/auth/login', () => {
@@ -212,6 +276,53 @@ describe('Auth Endpoints', () => {
             expect(body.success).toBe(false);
             expect(body.error.code).toBe('INVALID_CREDENTIALS');
             expect(body.error.message).toBe('Invalid username or password');
+        });
+
+        it('should return 422 for missing credentials', async () => {
+            const res = await app
+                .request('/api/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({}),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+            expect(res.status).toBe(422);
+            const body = await res.json() as ApiErrorResponse;
+            expect(body.success).toBe(false);
+            expect(body.error.code).toBe('VALIDATION_ERROR');
+        });
+
+        it('should return 400 for invalid JSON payload', async () => {
+            const res = await app
+                .request('/api/auth/login', {
+                    method: 'POST',
+                    body: 'invalid json',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+            expect(res.status).toBe(400);
+        });
+
+        it('user cannot login with email', async () => {
+            const loginCredentials = {
+                username: testUser.email,
+                password: testPassword,
+            };
+
+            const res = await app
+                .request('/api/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify(loginCredentials),
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                })
+
+            expect(res.status).toBe(401);
         });
     });
 

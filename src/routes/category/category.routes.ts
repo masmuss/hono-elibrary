@@ -12,6 +12,8 @@ import {
 	getCategorySuccessResponse,
 } from "@/core/schemas/category.schema";
 import { z } from "zod";
+import { auditLog } from "@/middlewares/audit-log";
+import { CategoryEvent } from "@/lib/constants/enums/audit-log-events.enum";
 
 export class CategoryRoutes extends BaseRoutes {
 	getAll = createRoute({
@@ -20,6 +22,7 @@ export class CategoryRoutes extends BaseRoutes {
 		path: "/categories",
 		method: "get",
 		request: { query: paginationQuerySchema },
+		middleware: [auditLog({ action: CategoryEvent.CATEGORY_GET_ALL })],
 		responses: {
 			200: this.successResponse(getAllCategoriesSuccessResponse, "OK"),
 		},
@@ -31,6 +34,7 @@ export class CategoryRoutes extends BaseRoutes {
 		path: "/categories/{id}",
 		method: "get",
 		request: { params: idParamSchema },
+		middleware: [auditLog({ action: CategoryEvent.CATEGORY_GET_BY_ID })],
 		responses: {
 			200: this.successResponse(getCategorySuccessResponse, "OK"),
 			404: this.errorResponse("Not Found"),
@@ -46,7 +50,11 @@ export class CategoryRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			body: jsonContentRequired(categorySchema, "Create category payload"),
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: CategoryEvent.CATEGORY_CREATE }),
+		],
 		responses: {
 			201: this.successResponse(getCategorySuccessResponse, "Created"),
 			400: this.errorResponse("Bad Request (e.g., validation error)"),
@@ -64,7 +72,11 @@ export class CategoryRoutes extends BaseRoutes {
 			params: idParamSchema,
 			body: jsonContentRequired(categorySchema, "Update category payload"),
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: CategoryEvent.CATEGORY_UPDATE }),
+		],
 		responses: {
 			200: this.successResponse(getCategorySuccessResponse, "OK"),
 			403: this.errorResponse("Forbidden"),
@@ -82,7 +94,11 @@ export class CategoryRoutes extends BaseRoutes {
 			headers: authHeadersSchema,
 			params: idParamSchema,
 		},
-		middleware: [authMiddleware, authorizeRole([UserRole.LIBRARIAN])],
+		middleware: [
+			authMiddleware,
+			authorizeRole([UserRole.LIBRARIAN]),
+			auditLog({ action: CategoryEvent.CATEGORY_DELETE }),
+		],
 		responses: {
 			200: this.successResponse(z.null(), "Deleted"),
 			400: this.errorResponse("Bad Request (e.g., category in use)"),

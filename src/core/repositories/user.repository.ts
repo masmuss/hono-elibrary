@@ -8,6 +8,8 @@ import type { Register } from "../types/auth";
 import type { User, UserInsert, UserUpdate } from "../types/user";
 import type { Filter } from "./types";
 import { APIError } from "../helpers/api-error";
+import type { DbInstance } from "../types/db";
+import type { PaginatedData } from "../base/types";
 
 export class UserRepository extends SoftDeleteMixin {
 	constructor() {
@@ -29,6 +31,7 @@ export class UserRepository extends SoftDeleteMixin {
 
 	async register(
 		data: Register,
+		dbInstance?: DbInstance,
 	): Promise<{ data: Omit<User, "password" | "salt"> }> {
 		const isExists = await this.isUserExists(data.username, data.email);
 		if (isExists) {
@@ -51,8 +54,9 @@ export class UserRepository extends SoftDeleteMixin {
 			);
 		}
 
+		const db = dbInstance ?? this.db;
 		const salt = randomUUIDv7();
-		const [user] = await this.db
+		const [user] = await db
 			.insert(users)
 			.values({
 				...data,
@@ -66,8 +70,13 @@ export class UserRepository extends SoftDeleteMixin {
 		return { data: restOfUser };
 	}
 
-	async login(username: string, password_param: string): Promise<User> {
-		const user = await this.db.query.users.findFirst({
+	async login(
+		username: string,
+		password_param: string,
+		dbInstance?: DbInstance,
+	): Promise<User> {
+		const db = dbInstance ?? this.db;
+		const user = await db.query.users.findFirst({
 			where: eq(users.username, username),
 			with: {
 				role: true,
@@ -101,8 +110,10 @@ export class UserRepository extends SoftDeleteMixin {
 	async updateRefreshToken(
 		userId: string,
 		token: string | null,
+		dbInstance?: DbInstance,
 	): Promise<void> {
-		await this.db
+		const db = dbInstance ?? this.db;
+		await db
 			.update(users)
 			.set({ refreshToken: token })
 			.where(eq(users.id, userId));
@@ -112,8 +123,10 @@ export class UserRepository extends SoftDeleteMixin {
 		userId: string,
 		currentPassword_param: string,
 		newPassword_param: string,
+		dbInstance?: DbInstance,
 	): Promise<boolean> {
-		const user = await this.db.query.users.findFirst({
+		const db = dbInstance ?? this.db;
+		const user = await db.query.users.findFirst({
 			where: eq(users.id, userId),
 		});
 
@@ -151,12 +164,15 @@ export class UserRepository extends SoftDeleteMixin {
 		return true;
 	}
 
-	async setPasswordResetToken(userId: string): Promise<string> {
+	async setPasswordResetToken(
+		userId: string,
+		dbInstance?: DbInstance,
+	): Promise<string> {
 		const resetToken = randomBytes(32).toString("hex");
 		const hashedToken = createHash("sha256").update(resetToken).digest("hex");
 		const expires = new Date(Date.now() + 3600000);
-
-		await this.db
+		const db = dbInstance ?? this.db;
+		await db
 			.update(users)
 			.set({
 				passwordResetToken: hashedToken,
@@ -167,24 +183,35 @@ export class UserRepository extends SoftDeleteMixin {
 		return resetToken;
 	}
 
-	async resetPassword(token: string, newPassword_param: string): Promise<boolean> {
+	async resetPassword(
+		token: string,
+		newPassword_param: string,
+		dbInstance?: DbInstance,
+	): Promise<boolean> {
 		const hashedToken = createHash("sha256").update(token).digest("hex");
 
-		const user = await this.db.query.users.findFirst({
+		const db = dbInstance ?? this.db;
+		const user = await db.query.users.findFirst({
 			where: and(
 				eq(users.passwordResetToken, hashedToken),
-				sql`password_reset_expires > NOW()`
+				sql`password_reset_expires > NOW()`,
 			),
 		});
 
 		if (!user) {
-			throw new APIError(400, "Password reset token is invalid or has expired.", "INVALID_TOKEN");
+			throw new APIError(
+				400,
+				"Password reset token is invalid or has expired.",
+				"INVALID_TOKEN",
+			);
 		}
 
 		const newSalt = randomUUIDv7();
-		const newHashedPassword = await Bun.password.hash(newPassword_param + newSalt);
+		const newHashedPassword = await Bun.password.hash(
+			newPassword_param + newSalt,
+		);
 
-		await this.db
+		await db
 			.update(users)
 			.set({
 				password: newHashedPassword,
@@ -198,8 +225,12 @@ export class UserRepository extends SoftDeleteMixin {
 		return true;
 	}
 
-	async getAllUsers(filter: Filter) {
-		const query = this.db
+	async getAllUsers(
+		filter: Filter,
+		dbInstance?: DbInstance,
+	): Promise<PaginatedData> {
+		const db = dbInstance ?? this.db;
+		const query = db
 			.select({
 				id: users.id,
 				name: users.name,
@@ -222,6 +253,7 @@ export class UserRepository extends SoftDeleteMixin {
 
 	async createUserByAdmin(
 		data: UserInsert,
+		dbInstance?: DbInstance,
 	): Promise<{ data: Omit<User, "password" | "salt"> }> {
 		const isExists = await this.isUserExists(data.username, data.email);
 		if (isExists) {
@@ -232,8 +264,9 @@ export class UserRepository extends SoftDeleteMixin {
 			);
 		}
 
+		const db = dbInstance ?? this.db;
 		const salt = randomUUIDv7();
-		const [newUser] = await this.db
+		const [newUser] = await db
 			.insert(users)
 			.values({
 				...data,
@@ -246,7 +279,11 @@ export class UserRepository extends SoftDeleteMixin {
 		return { data: restOfUser };
 	}
 
-	async updateUser(id: string, data: UserUpdate): Promise<{ data: User }> {
+	async updateUser(
+		id: string,
+		data: UserUpdate,
+		dbInstance?: DbInstance,
+	): Promise<{ data: User }> {
 		if (data.password) {
 			const salt = randomUUIDv7();
 			const hashedPassword = await Bun.password.hash(data.password + salt);
@@ -254,7 +291,8 @@ export class UserRepository extends SoftDeleteMixin {
 			data.salt = salt;
 		}
 
-		const [updatedUser] = await this.db
+		const db = dbInstance ?? this.db;
+		const [updatedUser] = await db
 			.update(users)
 			.set(data)
 			.where(eq(users.id, id))
@@ -267,11 +305,17 @@ export class UserRepository extends SoftDeleteMixin {
 		return { data: updatedUser };
 	}
 
-	async byId(id: string): Promise<{ data: any }> {
-		const user = await this.db.query.users.findFirst({
+	async byId(id: string, dbInstance?: DbInstance): Promise<{ data: any }> {
+		const db = dbInstance ?? this.db;
+		const user = await db.query.users.findFirst({
 			where: eq(users.id, id),
 			with: { role: { columns: { name: true } } },
-			columns: { password: false, salt: false },
+			columns: {
+				password: false,
+				salt: false,
+				passwordResetToken: false,
+				passwordResetExpires: false,
+			},
 		});
 
 		if (!user) {
@@ -280,8 +324,12 @@ export class UserRepository extends SoftDeleteMixin {
 		return { data: user };
 	}
 
-	async softDelete(id: string): Promise<{ data: User }> {
-		const [deletedUser] = await this.db
+	async softDelete(
+		id: string,
+		dbInstance?: DbInstance,
+	): Promise<{ data: User }> {
+		const db = dbInstance ?? this.db;
+		const [deletedUser] = await db
 			.update(users)
 			.set({ deletedAt: new Date() })
 			.where(eq(users.id, id))

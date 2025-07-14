@@ -30,7 +30,7 @@ export async function createTestUser(roleName: RoleName = UserRole.MEMBER, passw
     };
 
     const [user] = await db.insert(schema.users).values(newUser).returning();
-    return { user, password }; // Mengembalikan password mentah untuk login di tes
+    return { user, password };
 }
 
 export async function createTestCategory() {

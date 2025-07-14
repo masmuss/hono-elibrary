@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
 	date,
 	integer,
+	jsonb,
 	pgTable,
 	text,
 	timestamp,
@@ -106,7 +107,7 @@ export const loans = pgTable("loans", {
 		.notNull()
 		.default("pending"),
 	approvedAt: timestamp("approved_at"),
-	returnedAt: date("returned_at"), // jika null berarti belum dikembalikan
+	returnedAt: date("returned_at"),
 	...timestamps,
 });
 
@@ -121,6 +122,25 @@ export const loanRelations = relations(loans, ({ one }) => ({
 	}),
 	librarian: one(users, {
 		fields: [loans.librarianId],
+		references: [users.id],
+	}),
+}));
+
+export const auditLogs = pgTable("audit_logs", {
+	id: uuid("id").primaryKey().defaultRandom(),
+	userId: uuid("user_id").references(() => users.id),
+	action: varchar("action", { length: 255 }).notNull(),
+	status: varchar("status", { length: 50 }).notNull(),
+	payload: jsonb("payload"),
+	dbQuery: text("db_query"),
+	ipAddress: varchar("ip_address", { length: 50 }),
+	userAgent: text("user_agent"),
+	createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const auditLogRelations = relations(auditLogs, ({ one }) => ({
+	user: one(users, {
+		fields: [auditLogs.userId],
 		references: [users.id],
 	}),
 }));
