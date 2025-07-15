@@ -54,20 +54,31 @@ export class UserRepository extends SoftDeleteMixin {
 			);
 		}
 
-		const db = dbInstance ?? this.db;
-		const salt = randomUUIDv7();
-		const [user] = await db
-			.insert(users)
-			.values({
-				...data,
-				password: await Bun.password.hash(data.password + salt),
-				roleId: role.id,
-				salt,
-			})
-			.returning();
+		try {
+			const db = dbInstance ?? this.db;
+			const salt = randomUUIDv7();
+			const [user] = await db
+				.insert(users)
+				.values({
+					...data,
+					password: await Bun.password.hash(data.password + salt),
+					roleId: role.id,
+					salt,
+				})
+				.returning();
 
-		const { password, salt: removedSalt, ...restOfUser } = user;
-		return { data: restOfUser };
+			const { password, salt: removedSalt, ...restOfUser } = user;
+			return { data: restOfUser };
+		} catch (error: any) {
+			if (error.code === '23505') {
+				throw new APIError(
+					409,
+					"A user with this username or email already exists.",
+					"USER_ALREADY_EXISTS"
+				);
+			}
+			throw error;
+		}
 	}
 
 	async login(
