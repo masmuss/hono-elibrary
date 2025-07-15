@@ -70,11 +70,11 @@ export class UserRepository extends SoftDeleteMixin {
 			const { password, salt: removedSalt, ...restOfUser } = user;
 			return { data: restOfUser };
 		} catch (error: any) {
-			if (error.code === '23505') {
+			if (error.code === "23505") {
 				throw new APIError(
 					409,
 					"A user with this username or email already exists.",
-					"USER_ALREADY_EXISTS"
+					"USER_ALREADY_EXISTS",
 				);
 			}
 			throw error;
