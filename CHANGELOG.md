@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file. See [commit-and-tag-version](https://github.com/absolute-version/commit-and-tag-version) for commit guidelines.
 
+## [1.6.1](https://github.com/masmuss/hono-elibrary/compare/v1.6.0...v1.6.1) (2025-07-15)
+
+## [1.6.0](https://github.com/masmuss/hono-elibrary/compare/v1.5.0...v1.6.0) (2025-07-15)
+
+
+### Features
+
+* **seeder:** add database seeder for generating main user with admin, librarian and member role ([1eeab90](https://github.com/masmuss/hono-elibrary/commit/1eeab907076a76ff766938b71be1877a4ae77da2))
+
 ## [1.5.0](https://github.com/masmuss/hono-elibrary/compare/v1.4.0...v1.5.0) (2025-07-14)
 
 
