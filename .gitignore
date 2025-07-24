@@ -1,6 +1,9 @@
 # prod
 dist/
 
+# secret
+.ssh/
+
 # dev
 .vscode/*
 !.vscode/launch.json

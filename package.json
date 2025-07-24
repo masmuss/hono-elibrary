@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "bun run --hot src/index.ts",
-    "test": "bun test --env-file=.env.test --preload ./test/setup.ts",
+    "test": "NODE_ENV=test; bun test --preload ./test/setup.ts",
     "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
