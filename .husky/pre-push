@@ -3,7 +3,7 @@ echo "
 --------------------------------------------------------------------------
 "
 
-bun run test
+docker exec e-library-app-1 bun run test
 
 exit_code=$?
 
